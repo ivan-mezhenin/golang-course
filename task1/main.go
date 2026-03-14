@@ -2,8 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -17,20 +22,29 @@ type Repository struct {
 }
 
 func main() {
-	var user, repo string
+	var repoURL string
 
-	fmt.Print("Enter user name: ")
-	fmt.Scan(&user)
+	flag.StringVar(&repoURL, "url", "", "URL of repo (example: https://github.com/owner/repo)")
+	flag.Parse()
 
-	fmt.Print("Enter name of the repository: ")
-	fmt.Scan(&repo)
-
-	if user == "" || repo == "" {
-		fmt.Println("Error: name of user and repository is required")
-		return
+	if repoURL == "" {
+		if len(os.Args) > 1 {
+			repoURL = os.Args[1]
+		}
 	}
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", user, repo)
+	if repoURL == "" {
+		fmt.Println("Error: Enter URL of repo")
+		os.Exit(1)
+	}
+
+	owner, repo, err := parseGitHubRepoURL(repoURL)
+	if err != nil {
+		fmt.Printf("Incorrect URL: %v\n", err)
+		os.Exit(1)
+	}
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo)
 	response, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error while getting repository: ", err)
@@ -61,6 +75,35 @@ func main() {
 		if location != "" {
 			fmt.Printf("New location: %s\n", location)
 		}
+	default:
+		body, _ := io.ReadAll(response.Body)
+		fmt.Printf("Unexpected status %d for %s/%s\n%s\n", response.StatusCode, owner, repo, string(body))
+	}
+}
+
+func parseGitHubRepoURL(s string) (owner, repo string, err error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return "", "", err
 	}
 
+	if u.Host != "github.com" && u.Host != "www.github.com" {
+		return "", "", fmt.Errorf("Expected github.com in URL")
+	}
+
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("Expected /owner/repo in URL")
+	}
+
+	owner = parts[0]
+	repo = parts[1]
+
+	repo = strings.TrimSuffix(repo, ".git")
+
+	if owner == "" || repo == "" {
+		return "", "", fmt.Errorf("Could't define owner or repo")
+	}
+
+	return owner, repo, nil
 }
