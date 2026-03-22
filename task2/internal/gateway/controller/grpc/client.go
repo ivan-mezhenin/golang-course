@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"repo-stat/proto"
 )
@@ -17,6 +18,7 @@ type Client struct {
 func NewClient(collectorAddr string) (*Client, error) {
 	conn, err := grpc.Dial(
 		collectorAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 	)
 	if err != nil {
