@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	_ "repo-stat/docs"
 	"repo-stat/internal/gateway/controller/grpc"
@@ -13,7 +14,10 @@ import (
 )
 
 func main() {
-	collectorAddr := "localhost:50051"
+	collectorAddr := os.Getenv("COLLECTOR_ADDR")
+	if collectorAddr == "" {
+		collectorAddr = "localhost:50051"
+	}
 	client, err := grpc.NewClient(collectorAddr)
 	if err != nil {
 		log.Fatalf("failed to create grpc client: %v", err)
@@ -23,7 +27,7 @@ func main() {
 	handler := httpHandler.NewHandler(client)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/repos/{owner}/{repo}", handler.GetRepoInfo)
+	mux.HandleFunc("GET /repos/{owner}/{repo}", handler.GetRepoInfo)
 	mux.Handle("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 		httpSwagger.DeepLinking(true),
