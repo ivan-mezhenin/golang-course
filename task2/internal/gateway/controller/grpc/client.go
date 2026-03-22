@@ -19,7 +19,6 @@ func NewClient(collectorAddr string) (*Client, error) {
 	conn, err := grpc.Dial(
 		collectorAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial collector: %w", err)

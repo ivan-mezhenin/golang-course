@@ -14,21 +14,16 @@ import (
 )
 
 func main() {
-	// 1. Создаём адаптер (GitHub клиент)
 	ghAdapter := github.NewAdapter()
 
 	usecase := repo.NewGetRepoInfo(ghAdapter)
 
-	// 2. Создаём use-case, передаём ему адаптер (порт → адаптер)
-	ourServer := grpcserver.NewServer(usecase) // ← вызываем конструктор из ТВОЕГО пакета
+	ourServer := grpcserver.NewServer(usecase)
 
-	// 4. Создаём экземпляр gRPC-сервера из библиотеки
 	grpcServer := grpc.NewServer()
 
-	// 5. Регистрируем наш сервер как обработчик сервиса RepoService
 	proto.RegisterRepoServiceServer(grpcServer, ourServer)
 
-	// 5. Запускаем прослушивание порта
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

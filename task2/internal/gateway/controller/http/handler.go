@@ -18,6 +18,20 @@ func NewHandler(client *grpc.Client) *Handler {
 	return &Handler{client: client}
 }
 
+// GetRepoInfo godoc
+// @Summary      Получить информацию о репозитории
+// @Description  Возвращает базовую информацию о публичном репозитории GitHub
+// @Tags         repos
+// @Accept       json
+// @Produce      json
+// @Param        owner  path      string  true   "Владелец репозитория (username или организация)"
+// @Param        repo   path      string  true   "Название репозитория"
+// @Success      200     {object}  map[string]interface{}  "Информация о репозитории"
+// @Failure      400     {string}  string                  "Некорректные параметры"
+// @Failure      404     {string}  string                  "Репозиторий не найден"
+// @Failure      429     {string}  string                  "Превышен лимит запросов к GitHub"
+// @Failure      500     {string}  string                  "Внутренняя ошибка"
+// @Router       /api/repos/{owner}/{repo} [get]
 func (h *Handler) GetRepoInfo(w http.ResponseWriter, r *http.Request) {
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")

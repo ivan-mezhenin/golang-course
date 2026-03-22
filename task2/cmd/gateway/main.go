@@ -5,8 +5,11 @@ import (
 	"log"
 	"net/http"
 
+	_ "repo-stat/docs"
 	"repo-stat/internal/gateway/controller/grpc"
 	httpHandler "repo-stat/internal/gateway/controller/http"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func main() {
@@ -21,6 +24,10 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/repos/{owner}/{repo}", handler.GetRepoInfo)
+	mux.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+		httpSwagger.DeepLinking(true),
+	))
 
 	srv := &http.Server{
 		Addr:    ":8080",
