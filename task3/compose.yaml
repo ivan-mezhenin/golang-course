@@ -7,14 +7,41 @@ services:
     container_name: api
     restart: unless-stopped
     ports:
-      - 28080:8080
+      - "28080:8080"
     volumes:
-      - ./repo-stat/api/config/config.yaml:/config.yaml
+      - ./repo-stat/api/config/config.yaml:/config.yaml:ro
     environment:
-      - LISTEN_ADDRESS=:8080
-      - SUBSCRIBER_ADDRESS=subscriber:8080
+      - PROCESSOR_ADDRESS=processor:50052
+      - SUBSCRIBER_ADDRESS=subscriber:8081
     depends_on:
+      - processor
       - subscriber
+
+  processor:
+    image: processor:latest
+    build:
+      context: repo-stat
+      dockerfile: Dockerfile.processor
+    container_name: processor
+    restart: unless-stopped
+    expose:
+      - "50052"
+    volumes:
+      - ./repo-stat/processor/config/config.yaml:/config.yaml:ro
+    depends_on:
+      - collector
+
+  collector:
+    image: collector:latest
+    build:
+      context: repo-stat
+      dockerfile: Dockerfile.collector
+    container_name: collector
+    restart: unless-stopped
+    expose:
+      - "50051"
+    volumes:
+      - ./repo-stat/collector/config/config.yaml:/config.yaml:ro
 
   subscriber:
     image: subscriber:latest
@@ -24,12 +51,13 @@ services:
     container_name: subscriber
     restart: unless-stopped
     ports:
-      - 28081:8080
+      - "28081:8080"
     volumes:
-      - ./repo-stat/subscriber/config/config.yaml:/config.yaml
+      - ./repo-stat/subscriber/config/config.yaml:/config.yaml:ro
     environment:
       - LISTEN_ADDRESS=:8080
       - API_ADDRESS=api:8080
+
   tests:
     image: tests:latest
     build:

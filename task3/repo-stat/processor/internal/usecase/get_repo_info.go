@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"repo-stat/gateway/internal/domain"
+	"repo-stat/processor/internal/domain"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

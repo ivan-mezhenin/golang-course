@@ -10,15 +10,21 @@ type Pinger interface {
 }
 
 type Ping struct {
-	pinger Pinger
+	subscriber Pinger
+	processor  Pinger
 }
 
-func NewPing(pinger Pinger) *Ping {
+func NewPing(subscriber, processor Pinger) *Ping {
 	return &Ping{
-		pinger: pinger,
+		subscriber: subscriber,
+		processor:  processor,
 	}
 }
 
-func (u *Ping) Execute(ctx context.Context) domain.PingStatus {
-	return u.pinger.Ping(ctx)
+func (u *Ping) ProcessorPing(ctx context.Context) domain.PingStatus {
+	return u.processor.Ping(ctx)
+}
+
+func (u *Ping) SubscriberPing(ctx context.Context) domain.PingStatus {
+	return u.subscriber.Ping(ctx)
 }
