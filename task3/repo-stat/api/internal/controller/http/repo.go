@@ -26,8 +26,17 @@ func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc 
 
 		repoInfo, err := uc.Execute(r.Context(), owner, repo)
 		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
+			switch err {
+			case domain.ErrInvalidInput:
+				http.Error(w, `{"error": "invalid owner or repo name"}`, http.StatusBadRequest)
+			case domain.ErrRepoNotFound:
+				http.Error(w, `{"error": "repository not found"}`, http.StatusNotFound)
+			case domain.ErrGitHubRateLimited:
+				http.Error(w, `{"error": "github rate limit exceeded"}`, http.StatusTooManyRequests)
+			default:
+				log.Error("failed to get repository info", "error", err, "owner", owner, "repo", repo)
+				http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -45,6 +54,7 @@ func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc 
 
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			log.Error("failed to encode repo response", "error", err)
+			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 	}
 }

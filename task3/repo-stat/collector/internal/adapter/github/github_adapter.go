@@ -17,7 +17,7 @@ type Adapter struct {
 	client *http.Client
 }
 
-var response struct {
+type githubRepo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	ForksCount  int32  `json:"forks_count"`
@@ -39,36 +39,43 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	resp, err := a.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Github request failed: %w", err)
+		return nil, fmt.Errorf("github request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
 	switch resp.StatusCode {
 	case http.StatusOK:
+		// продолжаем
 	case http.StatusNotFound:
 		return nil, domain.ErrRepoNotFound
 	case http.StatusForbidden:
 		return nil, domain.ErrGitHubRateLimited
 	default:
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("%w: status %d, body: %s", domain.ErrGitHubAPIError, resp.StatusCode, string(body))
+		return nil, fmt.Errorf("%w: status %d, body: %s",
+			domain.ErrGitHubAPIError, resp.StatusCode, string(body))
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	var gh githubRepo
+	if err := json.Unmarshal(body, &gh); err != nil {
 		return nil, fmt.Errorf("json decode failed: %w", err)
 	}
 
 	return &domain.Repository{
-		Name:        response.Name,
-		Description: response.Description,
-		Stars:       response.Stargazers,
-		Forks:       response.ForksCount,
-		CreatedAt:   response.CreatedAt,
-		Visibility:  response.Visibility,
+		Name:        gh.Name,
+		Description: gh.Description,
+		Stars:       gh.Stargazers,
+		Forks:       gh.ForksCount,
+		CreatedAt:   gh.CreatedAt,
+		Visibility:  gh.Visibility,
 	}, nil
 }

@@ -18,8 +18,8 @@ message GetRepoResponse {
 }
 
 message GetRepoRequest {
-    string owner = 1;
-    string repo = 2;
+  string owner = 1;
+  string repo = 2;
 }
 
 message PingRequest {
