@@ -1,0 +1,10 @@
+package domain
+
+type Repository struct {
+	Name        string
+	Description string
+	Stars       int32
+	Forks       int32
+	CreatedAt   string
+	Visibility  string
+}
