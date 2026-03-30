@@ -5,10 +5,16 @@ import (
 	"net/http"
 
 	"repo-stat/services/gateway/internal/usecase"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
+
+type Response struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	ForksCount  int32  `json:"forks_count"`
+	Stargazers  int32  `json:"stargazers_count"`
+	CreatedAt   string `json:"created_at"`
+	Visibility  string `json:"visibility"`
+}
 
 type Handler struct {
 	usecase *usecase.GetRepoInfo
@@ -32,7 +38,7 @@ func NewHandler(usecase *usecase.GetRepoInfo) *Handler {
 // @Failure      429     {string}  string                  "Превышен лимит запросов к GitHub"
 // @Failure      500     {string}  string                  "Внутренняя ошибка"
 // @Router       /api/repos/{owner}/{repo} [get]
-func (h *Handler) GetRepoInfo(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
 
@@ -45,35 +51,20 @@ func (h *Handler) GetRepoInfo(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.usecase.Execute(ctx, owner, repo)
 	if err != nil {
-		code := http.StatusInternalServerError
-		msg := "internal error"
-
-		switch status.Code(err) {
-		case codes.NotFound:
-			code = http.StatusNotFound
-			msg = "repository not found"
-		case codes.InvalidArgument:
-			code = http.StatusBadRequest
-			msg = status.Convert(err).Message()
-		case codes.ResourceExhausted:
-			code = http.StatusTooManyRequests
-			msg = "github rate limit exceeded"
-		}
-
-		http.Error(w, msg, code)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	jsonResp := map[string]interface{}{
-		"name":             resp.Name,
-		"description":      resp.Description,
-		"stargazers_count": resp.Stars,
-		"forks_count":      resp.Forks,
-		"created_at":       resp.CreatedAt,
-		"visibility":       resp.Visibility,
+	response := Response{
+		Name:        resp.Name,
+		Description: resp.Description,
+		ForksCount:  resp.Forks,
+		Stargazers:  resp.Stars,
+		CreatedAt:   resp.CreatedAt,
+		Visibility:  resp.Visibility,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(jsonResp)
+	json.NewEncoder(w).Encode(response)
 }

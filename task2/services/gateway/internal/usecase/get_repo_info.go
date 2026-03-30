@@ -3,6 +3,9 @@ package usecase
 import (
 	"context"
 	"repo-stat/services/gateway/internal/domain"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type RepoGetter interface {
@@ -26,7 +29,19 @@ func (gri *GetRepoInfo) Execute(ctx context.Context, owner, repo string) (*domai
 
 	repositoryInfo, err := gri.repo.Get(ctx, owner, repo)
 	if err != nil {
-		return nil, err
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return nil, domain.ErrRepoNotFound
+			case codes.InvalidArgument:
+				return nil, domain.ErrInvalidInput
+			case codes.ResourceExhausted:
+				return nil, domain.ErrGitHubRateLimited
+			default:
+				return nil, domain.ErrGitHubAPIError
+			}
+		}
+		return nil, domain.ErrGitHubAPIError
 	}
 
 	return repositoryInfo, nil

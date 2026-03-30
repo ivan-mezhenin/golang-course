@@ -13,6 +13,8 @@ import (
 	"repo-stat/services/collector/internal/usecase"
 )
 
+const collectorAddress = ":50051"
+
 func main() {
 	ghAdapter := github.NewAdapter()
 
@@ -24,7 +26,7 @@ func main() {
 
 	pb.RegisterRepoServiceServer(grpcServer, handler)
 
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", collectorAddress)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

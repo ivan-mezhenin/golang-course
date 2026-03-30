@@ -17,6 +17,15 @@ type Adapter struct {
 	client *http.Client
 }
 
+var response struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	ForksCount  int32  `json:"forks_count"`
+	Stargazers  int32  `json:"stargazers_count"`
+	CreatedAt   string `json:"created_at"`
+	Visibility  string `json:"visibility"`
+}
+
 func NewAdapter() *Adapter {
 	return &Adapter{
 		client: &http.Client{
@@ -48,15 +57,6 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 	default:
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("%w: status %d, body: %s", domain.ErrGitHubAPIError, resp.StatusCode, string(body))
-	}
-
-	var response struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		ForksCount  int32  `json:"forks_count"`
-		Stargazers  int32  `json:"stargazers_count"`
-		CreatedAt   string `json:"created_at"`
-		Visibility  string `json:"visibility"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
