@@ -30,6 +30,7 @@ func NewHandler(ctx context.Context, log *slog.Logger, cfg config.Config) (http.
 	if err != nil {
 		log.Error("cannot init subscriber adapter", "error", err)
 		processorConn.Close()
+
 		return nil, err
 	}
 	defer func() {

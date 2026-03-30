@@ -17,7 +17,7 @@ import (
 
 const (
 	processorAddress = ":50052"
-	collectorAddress = "collector:50051"
+	collectorAddress = "localhost:50051"
 )
 
 func main() {
