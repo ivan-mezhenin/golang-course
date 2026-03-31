@@ -25,19 +25,23 @@ func NewHandler(ctx context.Context, log *slog.Logger, cfg config.Config) (http.
 		log.Error("cannot connect to processor", "error", err)
 		return nil, err
 	}
+	defer func() {
+		if err != nil {
+			if err := processorConn.Close(); err != nil {
+				log.Error("failed to close processor connection", "error", err)
+			}
+		}
+	}()
 
 	subscriberClient, err := subscriber.NewClient(cfg.Services.Subscriber, log)
 	if err != nil {
 		log.Error("cannot init subscriber adapter", "error", err)
-		processorConn.Close()
+		if err := processorConn.Close(); err != nil {
+			log.Error("failed to close processor connection", "error", err)
+		}
 
 		return nil, err
 	}
-	defer func() {
-		if err != nil {
-			processorConn.Close()
-		}
-	}()
 
 	processorPB := processorProto.NewProcessorClient(processorConn)
 	processorAdapter := processor.NewClient(processorPB)

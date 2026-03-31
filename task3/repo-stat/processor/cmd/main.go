@@ -33,14 +33,18 @@ func run() error {
 	log.Info("starting server...")
 	log.Debug("debug messages are enabled")
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		cfg.Services.Collector,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Error("failed to connect to collector: ", "error", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Error("failed to close collector connection", "error", err)
+		}
+	}()
 
 	collectorClient := collectorClient.NewCollectorClient(conn)
 
@@ -68,19 +72,17 @@ func run() error {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func main() {
-	ctx := context.Background()
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	_, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 	if err := run(); err != nil {
 		_, err = fmt.Fprintln(os.Stderr, err)
 		if err != nil {
 			fmt.Printf("launching server error: %s\n", err)
 		}
-		cancel()
 		os.Exit(1)
 	}
-	cancel()
 }
