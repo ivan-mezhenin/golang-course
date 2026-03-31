@@ -1,7 +1,7 @@
 package dto
 
 type RepoResponse struct {
-	Name        string `json:"name"`
+	Name        string `json:"full_name"`
 	Description string `json:"description"`
 	Stars       int32  `json:"stars"`
 	Forks       int32  `json:"forks"`

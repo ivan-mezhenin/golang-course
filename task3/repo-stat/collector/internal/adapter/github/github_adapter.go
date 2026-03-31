@@ -19,7 +19,7 @@ type Adapter struct {
 }
 
 type githubRepo struct {
-	Name        string `json:"name"`
+	Name        string `json:"full_name"`
 	Description string `json:"description"`
 	ForksCount  int32  `json:"forks_count"`
 	Stargazers  int32  `json:"stargazers_count"`
