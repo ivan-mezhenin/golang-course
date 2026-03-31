@@ -57,12 +57,13 @@ func run() error {
 
 func main() {
 	_, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
 	if err := run(); err != nil {
 		_, err = fmt.Fprintln(os.Stderr, err)
 		if err != nil {
 			fmt.Printf("launching server error: %s\n", err)
 		}
+		cancel()
 		os.Exit(1)
 	}
+	cancel()
 }
