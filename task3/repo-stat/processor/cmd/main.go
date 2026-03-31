@@ -63,8 +63,6 @@ func run() error {
 		return err
 	}
 
-	fmt.Printf("Processor gRPC server started on %s\n", cfg.GRPC.Address)
-
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Error("failed to serve: ", "error", err)
 		return err

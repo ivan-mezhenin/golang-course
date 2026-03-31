@@ -55,7 +55,6 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		// продолжаем
 	case http.StatusNotFound:
 		return nil, domain.ErrRepoNotFound
 	case http.StatusForbidden:
