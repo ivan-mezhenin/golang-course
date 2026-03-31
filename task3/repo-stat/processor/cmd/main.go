@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
-	"log"
 	"net"
+	"os"
+	"os/signal"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"repo-stat/platform/logger"
+	"repo-stat/processor/config"
 	"repo-stat/processor/internal/adapter/collector"
 	"repo-stat/processor/internal/controller"
 	"repo-stat/processor/internal/usecase"
@@ -15,18 +20,25 @@ import (
 	processorServer "repo-stat/proto/processor"
 )
 
-const (
-	processorAddress = ":50052"
-	collectorAddress = "localhost:50051"
-)
+func run() error {
 
-func main() {
+	var configPath string
+	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
+	flag.Parse()
+
+	cfg := config.MustLoad(configPath)
+
+	log := logger.MustMakeLogger(cfg.Logger.LogLevel)
+
+	log.Info("starting server...")
+	log.Debug("debug messages are enabled")
+
 	conn, err := grpc.Dial(
-		collectorAddress,
+		cfg.Services.Collector,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("failed to connect to collector: %v", err)
+		log.Error("failed to connect to collector: ", "error", err)
 	}
 	defer conn.Close()
 
@@ -34,7 +46,8 @@ func main() {
 
 	collectorAdapter, err := collector.NewClient(collectorClient)
 	if err != nil {
-		log.Fatalf("failed to create collector client: %v", err)
+		log.Error("failed to create collector client: ", "error", err)
+		return err
 	}
 
 	repoUsecase := usecase.NewGetRepoInfo(collectorAdapter)
@@ -44,14 +57,32 @@ func main() {
 	grpcServer := grpc.NewServer()
 	processorServer.RegisterProcessorServer(grpcServer, handler)
 
-	lis, err := net.Listen("tcp", processorAddress)
+	lis, err := net.Listen("tcp", cfg.GRPC.Address)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Error("failed to listen: ", "error", err)
+		return err
 	}
 
-	fmt.Printf("Processor gRPC server started on %s\n", processorAddress)
+	fmt.Printf("Processor gRPC server started on %s\n", cfg.GRPC.Address)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Error("failed to serve: ", "error", err)
+		return err
 	}
+
+	return err
+}
+
+func main() {
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	if err := run(); err != nil {
+		_, err = fmt.Fprintln(os.Stderr, err)
+		if err != nil {
+			fmt.Printf("launching server error: %s\n", err)
+		}
+		cancel()
+		os.Exit(1)
+	}
+	cancel()
 }

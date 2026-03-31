@@ -21,7 +21,6 @@ func run(ctx context.Context) error {
 	cfg := config.MustLoad(configPath)
 
 	// logger
-
 	log := logger.MustMakeLogger(cfg.Logger.LogLevel)
 
 	log.Info("starting server...")
