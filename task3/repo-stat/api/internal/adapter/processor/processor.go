@@ -3,8 +3,11 @@ package processor
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	"repo-stat/api/internal/domain"
@@ -12,17 +15,29 @@ import (
 )
 
 type Client struct {
-	pp processorProto.ProcessorClient
+	log  *slog.Logger
+	conn *grpc.ClientConn
+	pb   processorProto.ProcessorClient
 }
 
-func NewClient(pp processorProto.ProcessorClient) *Client {
-	return &Client{
-		pp: pp,
+func NewClient(address string, log *slog.Logger) (*Client, error) {
+	conn, err := grpc.NewClient(
+		address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Client{
+		log:  log,
+		conn: conn,
+		pb:   processorProto.NewProcessorClient(conn),
+	}, nil
 }
 
 func (c *Client) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
-	resp, err := c.pp.GetRepository(ctx, &processorProto.GetRepoRequest{
+	resp, err := c.pb.GetRepository(ctx, &processorProto.GetRepoRequest{
 		Owner: owner,
 		Repo:  repo,
 	})
@@ -53,7 +68,7 @@ func (c *Client) Get(ctx context.Context, owner, repo string) (*domain.Repositor
 }
 
 func (c *Client) Ping(ctx context.Context) domain.PingStatus {
-	_, err := c.pp.Ping(ctx, &processorProto.PingRequest{})
+	_, err := c.pb.Ping(ctx, &processorProto.PingRequest{})
 	if err != nil {
 		return domain.PingStatusDown
 	}

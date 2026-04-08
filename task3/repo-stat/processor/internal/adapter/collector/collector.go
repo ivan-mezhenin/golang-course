@@ -3,8 +3,11 @@ package collector
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	"repo-stat/processor/internal/domain"
@@ -12,12 +15,24 @@ import (
 )
 
 type Client struct {
+	log  *slog.Logger
+	conn *grpc.ClientConn
 	grpc proto.CollectorClient
 }
 
-func NewClient(grpc proto.CollectorClient) (*Client, error) {
+func NewClient(address string, log *slog.Logger) (*Client, error) {
+	conn, err := grpc.NewClient(
+		address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
-		grpc: grpc,
+		log:  log,
+		conn: conn,
+		grpc: proto.NewCollectorClient(conn),
 	}, nil
 }
 

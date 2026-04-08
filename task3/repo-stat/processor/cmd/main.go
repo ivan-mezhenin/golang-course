@@ -9,14 +9,12 @@ import (
 	"os/signal"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"repo-stat/platform/logger"
 	"repo-stat/processor/config"
 	"repo-stat/processor/internal/adapter/collector"
 	"repo-stat/processor/internal/controller"
 	"repo-stat/processor/internal/usecase"
-	collectorClient "repo-stat/proto/collector"
 	processorServer "repo-stat/proto/processor"
 )
 
@@ -33,22 +31,7 @@ func run() error {
 	log.Info("starting server...")
 	log.Debug("debug messages are enabled")
 
-	conn, err := grpc.NewClient(
-		cfg.Services.Collector,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Error("failed to connect to collector: ", "error", err)
-	}
-	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Error("failed to close collector connection", "error", err)
-		}
-	}()
-
-	collectorClient := collectorClient.NewCollectorClient(conn)
-
-	collectorAdapter, err := collector.NewClient(collectorClient)
+	collectorAdapter, err := collector.NewClient(cfg.Services.Collector, log)
 	if err != nil {
 		log.Error("failed to create collector client: ", "error", err)
 		return err
