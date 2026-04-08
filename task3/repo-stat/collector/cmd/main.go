@@ -4,21 +4,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
-
-	"google.golang.org/grpc"
 
 	"repo-stat/collector/config"
 	"repo-stat/collector/internal/adapter/github"
 	"repo-stat/collector/internal/controller"
 	"repo-stat/collector/internal/usecase"
+	"repo-stat/platform/grpcserver"
 	"repo-stat/platform/logger"
 	proto "repo-stat/proto/collector"
 )
 
-func run() error {
+func run(ctx context.Context) error {
 
 	var configPath string
 	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
@@ -37,27 +35,24 @@ func run() error {
 
 	handler := controller.NewHandler(usecase)
 
-	grpcServer := grpc.NewServer()
-
-	proto.RegisterCollectorServer(grpcServer, handler)
-
-	lis, err := net.Listen("tcp", cfg.GRPC.Address)
+	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {
-		log.Error("failed to listen: ", "error", err)
-		return err
+		return fmt.Errorf("create grpc server: %w", err)
 	}
 
-	log.Info("Collector gRPC server started", "address", cfg.GRPC.Address)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Error("failed to serve: ", "error", err)
-		return err
+	proto.RegisterCollectorServer(srv.GRPC(), handler)
+
+	if err := srv.Run(ctx); err != nil {
+		return fmt.Errorf("run grpc server: %w", err)
 	}
+
 	return nil
 }
 
 func main() {
-	_, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	if err := run(); err != nil {
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	if err := run(ctx); err != nil {
 		_, err = fmt.Fprintln(os.Stderr, err)
 		if err != nil {
 			fmt.Printf("launching server error: %s\n", err)

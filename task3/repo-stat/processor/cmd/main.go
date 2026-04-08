@@ -4,12 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 
-	"google.golang.org/grpc"
-
+	"repo-stat/platform/grpcserver"
 	"repo-stat/platform/logger"
 	"repo-stat/processor/config"
 	"repo-stat/processor/internal/adapter/collector"
@@ -18,7 +16,7 @@ import (
 	processorServer "repo-stat/proto/processor"
 )
 
-func run() error {
+func run(ctx context.Context) error {
 
 	var configPath string
 	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
@@ -41,26 +39,24 @@ func run() error {
 
 	handler := controller.NewHandler(repoUsecase)
 
-	grpcServer := grpc.NewServer()
-	processorServer.RegisterProcessorServer(grpcServer, handler)
-
-	lis, err := net.Listen("tcp", cfg.GRPC.Address)
+	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {
-		log.Error("failed to listen: ", "error", err)
-		return err
+		return fmt.Errorf("create grpc server: %w", err)
 	}
 
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Error("failed to serve: ", "error", err)
-		return err
+	processorServer.RegisterProcessorServer(srv.GRPC(), handler)
+
+	if err := srv.Run(ctx); err != nil {
+		return fmt.Errorf("run grpc server: %w", err)
 	}
 
 	return nil
 }
 
 func main() {
-	_, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	if err := run(); err != nil {
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	if err := run(ctx); err != nil {
 		_, err = fmt.Fprintln(os.Stderr, err)
 		if err != nil {
 			fmt.Printf("launching server error: %s\n", err)
