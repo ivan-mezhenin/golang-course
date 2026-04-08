@@ -5,10 +5,6 @@ import (
 	"repo-stat/api/internal/domain"
 )
 
-type Pinger interface {
-	Ping(ctx context.Context) domain.PingStatus
-}
-
 type Ping struct {
 	subscriber Pinger
 	processor  Pinger
