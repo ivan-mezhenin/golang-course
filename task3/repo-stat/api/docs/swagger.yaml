@@ -1,0 +1,105 @@
+basePath: /
+definitions:
+  repo-stat_api_internal_dto.PingResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/repo-stat_api_internal_dto.ServiceStatus'
+        type: array
+      status:
+        type: string
+    type: object
+  repo-stat_api_internal_dto.RepoResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      forks:
+        type: integer
+      full_name:
+        type: string
+      stars:
+        type: integer
+      visibility:
+        type: string
+    type: object
+  repo-stat_api_internal_dto.ServiceStatus:
+    properties:
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API Gateway для получения информации о GitHub репозиториях
+  title: Repo Stat Gateway
+  version: "1.0"
+paths:
+  /api/ping:
+    get:
+      description: Отправляет ping-запросы в Processor и Subscriber и возвращает статус
+        каждого сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Все сервисы работают
+          schema:
+            $ref: '#/definitions/repo-stat_api_internal_dto.PingResponse'
+        "503":
+          description: Один или несколько сервисов недоступны
+          schema:
+            $ref: '#/definitions/repo-stat_api_internal_dto.PingResponse'
+      summary: Проверка здоровья сервисов
+      tags:
+      - Ping
+  /api/repositories/info:
+    get:
+      consumes:
+      - application/json
+      description: Принимает URL GitHub репозитория и возвращает его основные данные
+      parameters:
+      - description: 'URL репозитория (например: https://github.com/octocat/Hello-World)'
+        in: query
+        name: url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo-stat_api_internal_dto.RepoResponse'
+        "400":
+          description: Некорректный URL или параметры
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Репозиторий не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Превышен лимит запросов GitHub
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить информацию о репозитории по URL
+      tags:
+      - repositories
+schemes:
+- http
+swagger: "2.0"

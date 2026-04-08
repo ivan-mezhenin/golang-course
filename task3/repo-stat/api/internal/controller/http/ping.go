@@ -10,9 +10,16 @@ import (
 	"repo-stat/api/internal/usecase"
 )
 
+// NewPingHandler godoc
+// @Summary      Проверка здоровья сервисов
+// @Description  Отправляет ping-запросы в Processor и Subscriber и возвращает статус каждого сервиса
+// @Tags         Ping
+// @Produce      json
+// @Success      200  {object}  dto.PingResponse  "Все сервисы работают"
+// @Failure      503  {object}  dto.PingResponse  "Один или несколько сервисов недоступны"
+// @Router       /api/ping [get]
 func NewPingHandler(log *slog.Logger, pingUC *usecase.Ping) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		processorStatus := pingUC.ProcessorPing(r.Context())
 		subscriberStatus := pingUC.SubscriberPing(r.Context())
 

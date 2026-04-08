@@ -1,3 +1,9 @@
+// @title           Repo Stat Gateway
+// @version         1.0
+// @description     API Gateway для получения информации о GitHub репозиториях
+
+// @BasePath  /
+// @schemes   http
 package main
 
 import (
@@ -7,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"repo-stat/api/config"
+	_ "repo-stat/api/docs"
 	"repo-stat/api/internal/controller/http"
 	"repo-stat/platform/httpserver"
 	"repo-stat/platform/logger"

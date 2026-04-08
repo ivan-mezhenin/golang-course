@@ -10,6 +10,19 @@ import (
 	"strings"
 )
 
+// NewRepoHandler godoc
+// @Summary      Получить информацию о репозитории по URL
+// @Description  Принимает URL GitHub репозитория и возвращает его основные данные
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param        url  query  string  true  "URL репозитория (например: https://github.com/octocat/Hello-World)"
+// @Success      200  {object}  dto.RepoResponse
+// @Failure      400  {object}  map[string]string  "Некорректный URL или параметры"
+// @Failure      404  {object}  map[string]string  "Репозиторий не найден"
+// @Failure      429  {object}  map[string]string  "Превышен лимит запросов GitHub"
+// @Failure      500  {object}  map[string]string  "Внутренняя ошибка сервера"
+// @Router       /api/repositories/info [get]
 func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		urlParam := r.URL.Query().Get("url")
