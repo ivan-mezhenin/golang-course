@@ -1,0 +1,15 @@
+FROM golang:1.25 AS build
+
+COPY go.mod go.sum /src/
+COPY proto /src/proto
+COPY subscriber /src/subscriber
+COPY platform /src/platform
+
+ENV CGO_ENABLED=0
+RUN cd /src && go build -o /subscriber subscriber/cmd/app/main.go
+
+FROM scratch
+
+COPY --from=build /subscriber /subscriber
+
+ENTRYPOINT ["/subscriber", "-config", "/config.yaml"]
