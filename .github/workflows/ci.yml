@@ -14,15 +14,15 @@ jobs:
     defaults:
       run:
       # // TODO: other folders
-        working-directory: task3
+        working-directory: task4
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: task3/repo-stat/go.mod
+          go-version-file: task4/repo-stat/go.mod
           cache: true
-          cache-dependency-path: task3/repo-stat/go.sum
+          cache-dependency-path: task4/repo-stat/go.sum
 
       - name: Install protoc
         run: |
@@ -48,7 +48,7 @@ jobs:
     needs: lint-and-unit
     defaults:
       run:
-        working-directory: task3
+        working-directory: task4
     steps:
       - uses: actions/checkout@v5
 
