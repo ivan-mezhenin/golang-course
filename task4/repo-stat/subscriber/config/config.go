@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"repo-stat/platform/env"
 	"repo-stat/platform/grpcserver"
 	"repo-stat/platform/logger"
@@ -14,11 +15,32 @@ type Services struct {
 	API string `yaml:"api" env:"API_ADDRESS" env-default:"localhost:8080"`
 }
 
+type Database struct {
+	Host     string `yaml:"host" env:"DB_HOST" env-default:"DB_HOST"`
+	Port     int    `yaml:"port" env:"DB_PORT" env-default:"DB_PORT"`
+	User     string `yaml:"user" env:"DB_USER" env-default:"DB_USER"`
+	Password string `yaml:"password" env:"DB_PASSWORD" env-default:"DB_PASSWORD"`
+	DBName   string `yaml:"dbname" env:"DB_NAME" env-default:"DB_NAME"`
+	SSLMode  string `yaml:"sslmode" env:"DB_SSLMODE" env-default:"DB_SSLMODE"`
+}
+
+func (d Database) DSN() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		d.User,
+		d.Password,
+		d.Host,
+		d.Port,
+		d.DBName,
+		d.SSLMode,
+	)
+}
+
 type Config struct {
 	App      App               `yaml:"app"`
 	Services Services          `yaml:"services"`
 	GRPC     grpcserver.Config `yaml:"grpc"`
 	Logger   logger.Config     `yaml:"logger"`
+	Database Database          `yaml:"database"`
 }
 
 func MustLoad(path string) Config {
