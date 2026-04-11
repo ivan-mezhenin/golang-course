@@ -32,6 +32,9 @@ services:
     environment:
       - LISTEN_ADDRESS=:8080
       - API_ADDRESS=api:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   processor:
     image: processor:latest
@@ -63,6 +66,24 @@ services:
       - ./repo-stat/collector/config/config.yaml:/config.yaml
     environment:
       - LISTEN_ADDRESS=:8080
+    
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: repo_stat
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   tests:
     image: tests:latest
@@ -73,3 +94,6 @@ services:
     depends_on:
       - api
     entrypoint: [ "true" ]
+  
+volumes:
+  postgres_data:
