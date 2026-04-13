@@ -27,9 +27,10 @@ func NewHandler(ctx context.Context, log *slog.Logger, cfg config.Config) (http.
 
 	repoUseCase := usecase.NewGetRepoInfo(processorAdapter)
 	pingUseCase := usecase.NewPing(subscriberClient, processorAdapter)
+	subscriptionUseCase := usecase.NewSubscriptionUseCase(subscriberClient)
 
 	mux := http.NewServeMux()
-	AddRoutes(mux, log, pingUseCase, repoUseCase)
+	AddRoutes(mux, log, pingUseCase, repoUseCase, subscriptionUseCase)
 
 	log.Info("HTTP handlers initialized successfully")
 
