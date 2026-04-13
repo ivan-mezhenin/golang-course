@@ -27,7 +27,13 @@ jobs:
       - name: Install protoc
         uses: arduino/setup-protoc@v3
         with:
-          version: '34.x'
+          version: '7.34.0'        # точная версия, которая у тебя сейчас локально
+
+      - name: Install Go tools
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+          echo "Installed protoc-gen-go v1.32.0 and protoc-gen-go-grpc v1.3.0"
 
       - name: Install tools
         run: make -C repo-stat tools
