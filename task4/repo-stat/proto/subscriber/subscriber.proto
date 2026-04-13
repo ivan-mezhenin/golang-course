@@ -7,9 +7,15 @@ option go_package = "repo-stat/proto/subscriber";
 service Subscriber {
   rpc Ping(PingRequest) returns (PingResponse);
 
-  rpc ListSubscriptions(ListSubscriptionRequest) returns (ListSubscriptionResponse);
-  rpc DeleteSubscription(DeleteSubscriptionRequest) returns (DeleteSubscriptionResponse);
-  rpc PostSubscription(PostSubscriptionRequest) returns (PostSubscriptionResponse);
+  rpc ListSubscriptions(ListSubscriptionRequest)
+    returns (ListSubscriptionResponse);
+
+  rpc DeleteSubscription(DeleteSubscriptionRequest)
+    returns (DeleteSubscriptionResponse);
+
+  rpc PostSubscription(PostSubscriptionRequest)
+    returns (PostSubscriptionResponse);
+
 }
 
 message Subscription {
