@@ -16,12 +16,12 @@ type Services struct {
 }
 
 type Database struct {
-	Host     string `yaml:"host" env:"DB_HOST" env-default:"DB_HOST"`
-	Port     int    `yaml:"port" env:"DB_PORT" env-default:"DB_PORT"`
-	User     string `yaml:"user" env:"DB_USER" env-default:"DB_USER"`
-	Password string `yaml:"password" env:"DB_PASSWORD" env-default:"DB_PASSWORD"`
-	DBName   string `yaml:"dbname" env:"DB_NAME" env-default:"DB_NAME"`
-	SSLMode  string `yaml:"sslmode" env:"DB_SSLMODE" env-default:"DB_SSLMODE"`
+	Host     string `yaml:"host"     env:"DB_HOST"     env-default:"postgres"`
+	Port     int    `yaml:"port"     env:"DB_PORT"     env-default:"5432"`
+	User     string `yaml:"user"     env:"DB_USER"     env-default:"admin"`
+	Password string `yaml:"password" env:"DB_PASSWORD" env-default:"password"`
+	DBName   string `yaml:"dbname"   env:"DB_NAME"     env-default:"repo_stat"`
+	SSLMode  string `yaml:"sslmode"  env:"DB_SSLMODE" env-default:"disable"`
 }
 
 func (d Database) DSN() string {

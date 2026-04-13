@@ -10,11 +10,3 @@ logger:
 
 services:
   api: "localhost:8080"
-
-database:
-  host: "postgres"
-  port: 5432
-  user: "admin"
-  password: "password"
-  dbname: "repo_stat"
-  sslmode: "disable"

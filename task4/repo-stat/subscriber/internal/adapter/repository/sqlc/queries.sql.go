@@ -21,7 +21,7 @@ type CreateSubscriptionParams struct {
 }
 
 func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) (Subscription, error) {
-	row := q.db.QueryRowContext(ctx, createSubscription, arg.Owner, arg.Repo)
+	row := q.db.QueryRow(ctx, createSubscription, arg.Owner, arg.Repo)
 	var i Subscription
 	err := row.Scan(&i.ID, &i.Owner, &i.Repo)
 	return i, err
@@ -38,7 +38,7 @@ type DeleteSubscriptionParams struct {
 }
 
 func (q *Queries) DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error {
-	_, err := q.db.ExecContext(ctx, deleteSubscription, arg.Owner, arg.Repo)
+	_, err := q.db.Exec(ctx, deleteSubscription, arg.Owner, arg.Repo)
 	return err
 }
 
@@ -56,7 +56,7 @@ type ExistsSubscriptionParams struct {
 }
 
 func (q *Queries) ExistsSubscription(ctx context.Context, arg ExistsSubscriptionParams) (bool, error) {
-	row := q.db.QueryRowContext(ctx, existsSubscription, arg.Owner, arg.Repo)
+	row := q.db.QueryRow(ctx, existsSubscription, arg.Owner, arg.Repo)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -74,7 +74,7 @@ type GetSubscriptionParams struct {
 }
 
 func (q *Queries) GetSubscription(ctx context.Context, arg GetSubscriptionParams) (Subscription, error) {
-	row := q.db.QueryRowContext(ctx, getSubscription, arg.Owner, arg.Repo)
+	row := q.db.QueryRow(ctx, getSubscription, arg.Owner, arg.Repo)
 	var i Subscription
 	err := row.Scan(&i.ID, &i.Owner, &i.Repo)
 	return i, err
@@ -87,7 +87,7 @@ ORDER BY id
 `
 
 func (q *Queries) ListSubscriptions(ctx context.Context) ([]Subscription, error) {
-	rows, err := q.db.QueryContext(ctx, listSubscriptions)
+	rows, err := q.db.Query(ctx, listSubscriptions)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +99,6 @@ func (q *Queries) ListSubscriptions(ctx context.Context) ([]Subscription, error)
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

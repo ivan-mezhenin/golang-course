@@ -7,17 +7,17 @@ import (
 	"repo-stat/subscriber/internal/domain"
 )
 
-type subscriptionUseCase struct {
+type SubscriptionUseCase struct {
 	repo SubscriptionRepository
 }
 
-func NewSubscriptionUseCase(repo SubscriptionRepository) *subscriptionUseCase {
-	return &subscriptionUseCase{
+func NewSubscriptionUseCase(repo SubscriptionRepository) *SubscriptionUseCase {
+	return &SubscriptionUseCase{
 		repo: repo,
 	}
 }
 
-func (uc *subscriptionUseCase) Create(ctx context.Context, owner, repo string) error {
+func (uc *SubscriptionUseCase) Create(ctx context.Context, owner, repo string) error {
 	if owner == "" || repo == "" {
 		return fmt.Errorf("owner and repo cannot be empty")
 	}
@@ -39,7 +39,7 @@ func (uc *subscriptionUseCase) Create(ctx context.Context, owner, repo string) e
 	return nil
 }
 
-func (uc *subscriptionUseCase) Delete(ctx context.Context, owner, repo string) error {
+func (uc *SubscriptionUseCase) Delete(ctx context.Context, owner, repo string) error {
 	if owner == "" || repo == "" {
 		return fmt.Errorf("owner and repo cannot be empty")
 	}
@@ -47,6 +47,6 @@ func (uc *subscriptionUseCase) Delete(ctx context.Context, owner, repo string) e
 	return uc.repo.Delete(ctx, owner, repo)
 }
 
-func (uc *subscriptionUseCase) List(ctx context.Context) ([]*domain.Subscription, error) {
+func (uc *SubscriptionUseCase) List(ctx context.Context) ([]*domain.Subscription, error) {
 	return uc.repo.List(ctx)
 }

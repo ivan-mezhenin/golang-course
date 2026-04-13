@@ -9,3 +9,4 @@ sql:
         out: "internal/adapter/repository/sqlc"
         emit_json_tags: true
         emit_db_tags: true
+        sql_package: "pgx/v5"

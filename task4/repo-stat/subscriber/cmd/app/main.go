@@ -10,11 +10,15 @@ import (
 	"repo-stat/platform/logger"
 	subscriberpb "repo-stat/proto/subscriber"
 	"repo-stat/subscriber/config"
-	grpccontroller "repo-stat/subscriber/internal/controller/grpc"
+	"repo-stat/subscriber/internal/adapter/repository"
+	grpccontroller "repo-stat/subscriber/internal/controller"
 	"repo-stat/subscriber/internal/usecase"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func run(ctx context.Context) error {
+
 	var configPath string
 	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
 	flag.Parse()
@@ -25,15 +29,33 @@ func run(ctx context.Context) error {
 	log.Info("starting subscriber server...")
 	log.Debug("debug messages are enabled")
 
+	dbpool, err := pgxpool.New(ctx, cfg.Database.DSN())
+	if err != nil {
+		return fmt.Errorf("failed to create connection pool: %w", err)
+	}
+	defer dbpool.Close()
+
+	if err := dbpool.Ping(ctx); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	log.Info("successfully connected to PostgreSQL")
+
+	dbRepo := repository.NewPostgresRepository(dbpool)
+
+	subscriptionUseCase := usecase.NewSubscriptionUseCase(dbRepo)
 	pingUseCase := usecase.NewPing()
-	pingServer := grpccontroller.NewServer(log, pingUseCase)
+
+	pingHandler := grpccontroller.NewPingHandler(log, pingUseCase)
+	subscriptionHandler := grpccontroller.NewSubscriptionHandler(log, subscriptionUseCase)
 
 	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {
 		return fmt.Errorf("create grpc server: %w", err)
 	}
 
-	subscriberpb.RegisterSubscriberServer(srv.GRPC(), pingServer)
+	subscriberpb.RegisterSubscriberServer(srv.GRPC(), subscriptionHandler)
+	subscriberpb.RegisterSubscriberServer(srv.GRPC(), pingHandler)
 
 	if err := srv.Run(ctx); err != nil {
 		return fmt.Errorf("run grpc server: %w", err)
