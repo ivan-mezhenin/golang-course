@@ -46,16 +46,14 @@ func run(ctx context.Context) error {
 	subscriptionUseCase := usecase.NewSubscriptionUseCase(dbRepo)
 	pingUseCase := usecase.NewPing()
 
-	pingHandler := grpccontroller.NewPingHandler(log, pingUseCase)
-	subscriptionHandler := grpccontroller.NewSubscriptionHandler(log, subscriptionUseCase)
+	handler := grpccontroller.NewHandler(log, subscriptionUseCase, pingUseCase)
 
 	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {
 		return fmt.Errorf("create grpc server: %w", err)
 	}
 
-	subscriberpb.RegisterSubscriberServer(srv.GRPC(), subscriptionHandler)
-	subscriberpb.RegisterSubscriberServer(srv.GRPC(), pingHandler)
+	subscriberpb.RegisterSubscriberServer(srv.GRPC(), handler)
 
 	if err := srv.Run(ctx); err != nil {
 		return fmt.Errorf("run grpc server: %w", err)
