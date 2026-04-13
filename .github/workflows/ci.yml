@@ -29,12 +29,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
 
-      - name: Install golang tools
-        run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-          echo "Installed protoc-gen-go v1.32.0 and protoc-gen-go-grpc v1.3.0"
-
       - name: Install tools
         run: make -C repo-stat tools
 
