@@ -25,9 +25,9 @@ jobs:
           cache-dependency-path: task4/repo-stat/go.sum
 
       - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          version: '34.x'
 
       - name: Install tools
         run: make -C repo-stat tools

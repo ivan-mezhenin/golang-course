@@ -9,7 +9,7 @@ PROTOC_GEN_GO := $(GOBIN)/protoc-gen-go
 PROTOC_GEN_GO_GRPC := $(GOBIN)/protoc-gen-go-grpc
 
 PROTOC_GEN_GO_VERSION := v1.32.0
-PROTOC_GEN_GO_GRPC_VERSION := v1.3.0
+PROTOC_GEN_GO_GRPC_VERSION := v1.6.1
 GOLANGCI_LINT_VERSION := v2.11.2
 
 .PHONY: lint fix protobuf protolint gofmtcheck golint tools test
