@@ -39,9 +39,11 @@ func NewCreateSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseC
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]string{
+		if err := json.NewEncoder(w).Encode(map[string]string{
 			"message": "subscription created successfully",
-		})
+		}); err != nil {
+			log.Error("failed to write subscription creation success", "error", err)
+		}
 	}
 }
 
@@ -64,9 +66,11 @@ func NewDeleteSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseC
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		if err := json.NewEncoder(w).Encode(map[string]string{
 			"message": "subscription deleted successfully",
-		})
+		}); err != nil {
+			log.Error("failed to write removal success", "error", err)
+		}
 	}
 }
 
