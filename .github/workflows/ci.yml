@@ -27,7 +27,7 @@ jobs:
       - name: Install protoc
         uses: arduino/setup-protoc@v3
         with:
-          version: '7.34.0'        # точная версия, которая у тебя сейчас локально
+          version: '34.0'
 
       - name: Install Go tools
         run: |
