@@ -8,3 +8,7 @@ type Repository struct {
 	CreatedAt   string
 	Visibility  string
 }
+
+type SubscriptionInfo struct {
+	Repositories []Repository
+}

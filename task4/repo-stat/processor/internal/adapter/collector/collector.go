@@ -68,3 +68,36 @@ func (c *Client) Get(ctx context.Context, owner, repo string) (*domain.Repositor
 		Visibility:  resp.Visibility,
 	}, nil
 }
+
+func (c *Client) GetSubscriptionsInfo(ctx context.Context) (*domain.SubscriptionInfo, error) {
+	resp, err := c.grpc.GetSubscriptionsInfo(ctx, &proto.GetSubscriptionsInfoRequest{})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return nil, domain.ErrRepoNotFound
+			case codes.InvalidArgument:
+				return nil, domain.ErrInvalidInput
+			case codes.ResourceExhausted:
+				return nil, domain.ErrGitHubRateLimited
+			default:
+				return nil, fmt.Errorf("%w: %s", domain.ErrGitHubAPIError, st.Message())
+			}
+		}
+		return nil, fmt.Errorf("processor client: %w", err)
+	}
+
+	repositories := &domain.SubscriptionInfo{Repositories: make([]domain.Repository, 0, len(resp.Repositories))}
+	for _, repo := range resp.Repositories {
+		repositories.Repositories = append(repositories.Repositories, domain.Repository{
+			Name:        repo.Name,
+			CreatedAt:   repo.CreatedAt,
+			Description: repo.Description,
+			Visibility:  repo.Visibility,
+			Stars:       repo.Stars,
+			Forks:       repo.Forks,
+		})
+	}
+
+	return repositories, nil
+}

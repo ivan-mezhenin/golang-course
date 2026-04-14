@@ -22,7 +22,7 @@ func NewHandler(usecase *repo.GetRepoInfo) *Handler {
 }
 
 func (h *Handler) GetRepository(ctx context.Context, req *proto.GetRepoRequest) (*proto.GetRepoResponse, error) {
-	repoData, err := h.usecase.Execute(ctx, req.Owner, req.Repo)
+	repoData, err := h.usecase.Get(ctx, req.Owner, req.Repo)
 	if err != nil {
 		switch err {
 		case domain.ErrInvalidInput:
@@ -44,6 +44,36 @@ func (h *Handler) GetRepository(ctx context.Context, req *proto.GetRepoRequest) 
 		CreatedAt:   repoData.CreatedAt,
 		Visibility:  repoData.Visibility,
 	}, nil
+}
+
+func (h *Handler) GetSubscriptionsInfo(ctx context.Context, req *proto.GetSubscriptionsInfoRequest) (*proto.GetSubscriptionsInfoResponse, error) {
+	resp, err := h.usecase.GetSubscriptionsInfo(ctx)
+	if err != nil {
+		switch err {
+		case domain.ErrInvalidInput:
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case domain.ErrRepoNotFound:
+			return nil, status.Error(codes.NotFound, err.Error())
+		case domain.ErrGitHubRateLimited:
+			return nil, status.Error(codes.ResourceExhausted, err.Error())
+		default:
+			return nil, status.Error(codes.Internal, "internal error: "+err.Error())
+		}
+	}
+
+	repositories := proto.GetSubscriptionsInfoResponse{Repositories: make([]*proto.GetRepoResponse, 0, len(resp.Repositories))}
+	for _, repo := range resp.Repositories {
+		repositories.Repositories = append(repositories.Repositories, &proto.GetRepoResponse{
+			Name:        repo.Name,
+			Description: repo.Description,
+			Stars:       int32(repo.Stars),
+			Forks:       int32(repo.Forks),
+			CreatedAt:   repo.CreatedAt,
+			Visibility:  repo.Visibility,
+		})
+	}
+
+	return &repositories, nil
 }
 
 func (h *Handler) Ping(ctx context.Context, req *proto.PingRequest) (*proto.PingResponse, error) {
