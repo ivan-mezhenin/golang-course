@@ -34,7 +34,7 @@ services:
       - LISTEN_ADDRESS=:8080
       - API_ADDRESS=api:8080
     depends_on:
-      -postgres
+      - postgres
 
   processor:
     image: processor:latest

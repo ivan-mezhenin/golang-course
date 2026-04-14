@@ -5,7 +5,9 @@ CONTAINER_RUNTIME ?= docker
 .PHONY: check-container-runtime up down down-volumes run-tests test lint proto unit
 
 up: check-container-runtime down ## Up containers with compose
-	$(CONTAINER_RUNTIME) compose up --build -d
+	$(CONTAINER_RUNTIME) compose \
+		--env-file .env.default \
+		up --build -d
 
 down: check-container-runtime ## Stop and remove containers
 	$(CONTAINER_RUNTIME) compose down
@@ -18,7 +20,9 @@ run-tests: ## Run tests container
 
 test: check-container-runtime ## Up containers and run tests
 	@$(MAKE) down-volumes
-	@$(MAKE) up
+	@$(CONTAINER_RUNTIME) compose \
+		--env-file .env.default \
+		up --build -d
 	@echo "Waiting for cluster to start" \
 		&& for i in $$(seq 15); do \
 			curl -sf http://localhost:28080 >/dev/null 2>&1 && break \
