@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,15 +15,16 @@ import (
 type Handler struct {
 	proto.UnimplementedCollectorServer
 
-	usecase *repo.GetRepoInfo
+	repoUsecase         *repo.GetRepoInfo
+	subscriptionUsecase *repo.GetSubscriptionsInfo
 }
 
-func NewHandler(usecase *repo.GetRepoInfo) *Handler {
-	return &Handler{usecase: usecase}
+func NewHandler(repoUC *repo.GetRepoInfo, subUC *repo.GetSubscriptionsInfo) *Handler {
+	return &Handler{repoUsecase: repoUC, subscriptionUsecase: subUC}
 }
 
 func (h *Handler) GetRepoInfo(ctx context.Context, req *proto.GetRepoRequest) (*proto.GetRepoResponse, error) {
-	repoData, err := h.usecase.Execute(ctx, req.Owner, req.Repo)
+	repoData, err := h.repoUsecase.Get(ctx, req.Owner, req.Repo)
 	if err != nil {
 		switch err {
 		case domain.ErrInvalidInput:
@@ -44,4 +46,38 @@ func (h *Handler) GetRepoInfo(ctx context.Context, req *proto.GetRepoRequest) (*
 		CreatedAt:   repoData.CreatedAt,
 		Visibility:  repoData.Visibility,
 	}, nil
+}
+
+func (h *Handler) GetSubscriptionsInfo(ctx context.Context, req *proto.GetSubscriptionsInfoRequest) (*proto.GetSubscriptionsInfoResponse, error) {
+	subscriptions, err := h.subscriptionUsecase.GetSubscriptionsInfo(ctx)
+	if err != nil {
+		switch err {
+		case domain.ErrInvalidInput:
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case domain.ErrRepoNotFound:
+			return nil, status.Error(codes.NotFound, err.Error())
+		case domain.ErrGitHubRateLimited:
+			return nil, status.Error(codes.ResourceExhausted, err.Error())
+		default:
+			return nil, status.Error(codes.Internal, "internal error: "+err.Error())
+		}
+	}
+
+	repositories := proto.GetSubscriptionsInfoResponse{
+		Repositories: make([]*proto.GetRepoResponse, 0, len(subscriptions.Repositories)),
+	}
+	for _, sub := range subscriptions.Repositories {
+		fmt.Println(sub.Name, sub.CreatedAt, sub.Visibility)
+		repositories.Repositories = append(repositories.Repositories,
+			&proto.GetRepoResponse{
+				Name:        sub.Name,
+				Description: sub.Description,
+				Stars:       int32(sub.Stars),
+				Forks:       int32(sub.Forks),
+				CreatedAt:   sub.CreatedAt,
+				Visibility:  sub.Visibility,
+			})
+	}
+
+	return &repositories, nil
 }

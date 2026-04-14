@@ -9,6 +9,7 @@ import (
 
 	"repo-stat/collector/config"
 	"repo-stat/collector/internal/adapter/github"
+	"repo-stat/collector/internal/adapter/subscriber"
 	"repo-stat/collector/internal/controller"
 	"repo-stat/collector/internal/usecase"
 	"repo-stat/platform/grpcserver"
@@ -30,10 +31,18 @@ func run(ctx context.Context) error {
 	log.Debug("debug messages are enabled")
 
 	ghAdapter := github.NewAdapter()
+	subscriberClient, err := subscriber.NewClient(cfg.Services.Subscriber, log)
+	if err != nil {
+		log.Error("failed to create subscriber client: ", "error", err)
+		return err
+	}
 
-	usecase := usecase.NewGetRepoInfo(ghAdapter)
+	log.Info("Subscriber client was created...")
 
-	handler := controller.NewHandler(usecase)
+	repoUsecase := usecase.NewGetRepoInfo(ghAdapter)
+	subUsecase := usecase.NewGetSubscriptionsInfo(subscriberClient, ghAdapter)
+
+	handler := controller.NewHandler(repoUsecase, subUsecase)
 
 	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {

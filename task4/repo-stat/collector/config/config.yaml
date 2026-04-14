@@ -7,3 +7,7 @@ grpc:
 
 logger:
   log_level: "DEBUG"
+
+services:
+  subscriber: "localhost:8081"
+  processor:  "localhost:8083"

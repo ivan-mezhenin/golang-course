@@ -5,10 +5,6 @@ import (
 	"repo-stat/collector/internal/domain"
 )
 
-type RepoGetter interface {
-	Get(ctx context.Context, owner, repo string) (*domain.Repository, error)
-}
-
 type GetRepoInfo struct {
 	repo RepoGetter
 }
@@ -19,7 +15,7 @@ func NewGetRepoInfo(repo RepoGetter) *GetRepoInfo {
 	}
 }
 
-func (gri *GetRepoInfo) Execute(ctx context.Context, owner, repo string) (*domain.Repository, error) {
+func (gri *GetRepoInfo) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
 	if owner == "" || repo == "" {
 		return nil, domain.ErrInvalidInput
 	}

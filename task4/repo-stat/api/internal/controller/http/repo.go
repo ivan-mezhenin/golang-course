@@ -101,6 +101,11 @@ func NewGetSubscriptionsInfoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) h
 				Visibility:  repo.Visibility,
 			})
 		}
+
+		if err := json.NewEncoder(w).Encode(repositories); err != nil {
+			log.Error("failed to encode repo info", "error", err)
+			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+		}
 	}
 }
 
