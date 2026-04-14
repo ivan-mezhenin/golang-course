@@ -5,6 +5,11 @@ import (
 	"repo-stat/api/internal/domain"
 )
 
+type RepoGetter interface {
+	Get(ctx context.Context, owner, repo string) (*domain.Repository, error)
+	GetSubscriptionsInfo(ctx context.Context) (*domain.SubscriptionInfo, error)
+}
+
 type Pinger interface {
 	Ping(ctx context.Context) domain.PingStatus
 }

@@ -37,7 +37,7 @@ func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc 
 			return
 		}
 
-		repoInfo, err := uc.Execute(r.Context(), owner, repo)
+		repoInfo, err := uc.Get(r.Context(), owner, repo)
 		if err != nil {
 			switch err {
 			case domain.ErrInvalidInput:
@@ -68,6 +68,38 @@ func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc 
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			log.Error("failed to encode repo response", "error", err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+		}
+	}
+}
+
+func NewGetSubscriptionsInfoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := uc.GetSubscriptionsInfo(r.Context())
+		if err != nil {
+			switch err {
+			case domain.ErrInvalidInput:
+				http.Error(w, `{"error": "invalid owner or repo name"}`, http.StatusBadRequest)
+			case domain.ErrRepoNotFound:
+				http.Error(w, `{"error": "repository not found"}`, http.StatusNotFound)
+			case domain.ErrGitHubRateLimited:
+				http.Error(w, `{"error": "github rate limit exceeded"}`, http.StatusTooManyRequests)
+			default:
+				log.Error("failed to get repository info", "error", err)
+				http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+			}
+			return
+		}
+
+		repositories := dto.SubscriptionInfoResponse{Repositories: make([]dto.RepoResponse, 0, len(resp.Repositories))}
+		for _, repo := range resp.Repositories {
+			repositories.Repositories = append(repositories.Repositories, dto.RepoResponse{
+				Name:        repo.Name,
+				Description: repo.Description,
+				Stars:       repo.Stars,
+				Forks:       repo.Forks,
+				CreatedAt:   repo.CreatedAt,
+				Visibility:  repo.Visibility,
+			})
 		}
 	}
 }

@@ -11,3 +11,7 @@ func NewSubscription(owner, repo string) *Subscription {
 		Repo:  repo,
 	}
 }
+
+type SubscriptionInfo struct {
+	Repositories []Repository
+}

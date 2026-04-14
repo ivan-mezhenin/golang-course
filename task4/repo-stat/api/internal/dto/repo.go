@@ -8,3 +8,7 @@ type RepoResponse struct {
 	CreatedAt   string `json:"created_at"`
 	Visibility  string `json:"visibility"`
 }
+
+type SubscriptionInfoResponse struct {
+	Repositories []RepoResponse `json:"repositories"`
+}
