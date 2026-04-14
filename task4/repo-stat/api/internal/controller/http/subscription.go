@@ -9,6 +9,19 @@ import (
 	"strings"
 )
 
+// NewCreateSubscriptionHandler godoc
+// @Summary      Создать подписку на репозиторий
+// @Description  Подписывает пользователя на обновления репозитория GitHub
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        body  body  dto.SubscriptionResponse  true  "Данные подписки"
+// @Success      201  {object}  map[string]string  "Подписка успешно создана"
+// @Failure      400  {object}  map[string]string  "Некорректные данные (owner или repo пустые)"
+// @Failure      404  {object}  map[string]string  "Репозиторий не существует на GitHub"
+// @Failure      409  {object}  map[string]string  "Подписка уже существует"
+// @Failure      500  {object}  map[string]string  "Внутренняя ошибка сервера"
+// @Router       /subscriptions [post]
 func NewCreateSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.SubscriptionResponse
@@ -33,6 +46,16 @@ func NewCreateSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseC
 				return
 			}
 
+			if strings.Contains(err.Error(), "cannot be empty") {
+				http.Error(w, `{"error": "owner and repo are required"}`, http.StatusBadRequest)
+				return
+			}
+
+			if strings.Contains(err.Error(), "does not exist on GitHub") {
+				http.Error(w, `{"error": "repository does not exist on GitHub"}`, http.StatusNotFound)
+				return
+			}
+
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 			return
 		}
@@ -47,6 +70,17 @@ func NewCreateSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseC
 	}
 }
 
+// NewDeleteSubscriptionHandler godoc
+// @Summary      Удалить подписку
+// @Description  Отписывает от репозитория
+// @Tags         subscriptions
+// @Produce      json
+// @Param        owner  path  string  true  "Владелец репозитория"
+// @Param        repo   path  string  true  "Название репозитория"
+// @Success      200  {object}  map[string]string  "Подписка успешно удалена"
+// @Failure      400  {object}  map[string]string  "owner или repo пустые"
+// @Failure      500  {object}  map[string]string  "Внутренняя ошибка сервера"
+// @Router       /subscriptions/{owner}/{repo} [delete]
 func NewDeleteSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner := strings.TrimSpace(r.PathValue("owner"))
@@ -74,6 +108,14 @@ func NewDeleteSubscriptionHandler(log *slog.Logger, uc *usecase.SubscriptionUseC
 	}
 }
 
+// NewListSubscriptionsHandler godoc
+// @Summary      Получить список всех подписок
+// @Description  Возвращает список всех репозиториев, на которые оформлены подписки
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {object}  dto.ListSubscriptionsResponse
+// @Failure      500  {object}  map[string]string  "Внутренняя ошибка сервера"
+// @Router       /subscriptions [get]
 func NewListSubscriptionsHandler(log *slog.Logger, uc *usecase.SubscriptionUseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		resp, err := uc.List(r.Context())

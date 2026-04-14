@@ -29,13 +29,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Все сервисы работают",
                         "schema": {
-                            "$ref": "#/definitions/repo-stat_api_internal_dto.PingResponse"
+                            "$ref": "#/definitions/dto.PingResponse"
                         }
                     },
                     "503": {
                         "description": "Один или несколько сервисов недоступны",
                         "schema": {
-                            "$ref": "#/definitions/repo-stat_api_internal_dto.PingResponse"
+                            "$ref": "#/definitions/dto.PingResponse"
                         }
                     }
                 }
@@ -67,7 +67,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/repo-stat_api_internal_dto.RepoResponse"
+                            "$ref": "#/definitions/dto.RepoResponse"
                         }
                     },
                     "400": {
@@ -108,16 +108,213 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/subscriptions": {
+            "get": {
+                "description": "Возвращает список всех репозиториев, на которые оформлены подписки",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Получить список всех подписок",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListSubscriptionsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Подписывает пользователя на обновления репозитория GitHub",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Создать подписку на репозиторий",
+                "parameters": [
+                    {
+                        "description": "Данные подписки",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SubscriptionResponse"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Подписка успешно создана",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные (owner или repo пустые)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Репозиторий не существует на GitHub",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Подписка уже существует",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/info": {
+            "get": {
+                "description": "Collector получает список подписок от Subscribe и собирает информацию о каждом репозитории через GitHub API",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Получить информацию по всем подписанным репозиториям",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SubscriptionInfoResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{owner}/{repo}": {
+            "delete": {
+                "description": "Отписывает от репозитория",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Удалить подписку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Владелец репозитория",
+                        "name": "owner",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Название репозитория",
+                        "name": "repo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Подписка успешно удалена",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "owner или repo пустые",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "repo-stat_api_internal_dto.PingResponse": {
+        "dto.ListSubscriptionsResponse": {
+            "type": "object",
+            "properties": {
+                "subscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SubscriptionResponse"
+                    }
+                }
+            }
+        },
+        "dto.PingResponse": {
             "type": "object",
             "properties": {
                 "services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/repo-stat_api_internal_dto.ServiceStatus"
+                        "$ref": "#/definitions/dto.ServiceStatus"
                     }
                 },
                 "status": {
@@ -125,7 +322,7 @@ const docTemplate = `{
                 }
             }
         },
-        "repo-stat_api_internal_dto.RepoResponse": {
+        "dto.RepoResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -148,13 +345,35 @@ const docTemplate = `{
                 }
             }
         },
-        "repo-stat_api_internal_dto.ServiceStatus": {
+        "dto.ServiceStatus": {
             "type": "object",
             "properties": {
                 "name": {
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SubscriptionInfoResponse": {
+            "type": "object",
+            "properties": {
+                "repositories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RepoResponse"
+                    }
+                }
+            }
+        },
+        "dto.SubscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string"
+                },
+                "repo": {
                     "type": "string"
                 }
             }

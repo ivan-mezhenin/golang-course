@@ -72,6 +72,14 @@ func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc 
 	}
 }
 
+// NewGetSubscriptionsInfoHandler godoc
+// @Summary      Получить информацию по всем подписанным репозиториям
+// @Description  Collector получает список подписок от Subscribe и собирает информацию о каждом репозитории через GitHub API
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {object}  dto.SubscriptionInfoResponse
+// @Failure      500  {object}  map[string]string  "Внутренняя ошибка сервера"
+// @Router       /subscriptions/info [get]
 func NewGetSubscriptionsInfoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		resp, err := uc.GetSubscriptionsInfo(r.Context())

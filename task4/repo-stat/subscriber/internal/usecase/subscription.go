@@ -4,16 +4,19 @@ import (
 	"context"
 	"fmt"
 
+	"repo-stat/subscriber/internal/adapter/github"
 	"repo-stat/subscriber/internal/domain"
 )
 
 type SubscriptionUseCase struct {
-	repo SubscriptionRepository
+	repo   SubscriptionRepository
+	github *github.Adapter
 }
 
-func NewSubscriptionUseCase(repo SubscriptionRepository) *SubscriptionUseCase {
+func NewSubscriptionUseCase(repo SubscriptionRepository, gh *github.Adapter) *SubscriptionUseCase {
 	return &SubscriptionUseCase{
-		repo: repo,
+		repo:   repo,
+		github: gh,
 	}
 }
 
@@ -22,9 +25,17 @@ func (uc *SubscriptionUseCase) Create(ctx context.Context, owner, repo string) e
 		return fmt.Errorf("owner and repo cannot be empty")
 	}
 
+	exists, err := uc.github.IsRepoExist(ctx, owner, repo)
+	if err != nil {
+		return fmt.Errorf("failed to check repository on GitHub: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("repository %s/%s does not exist on GitHub", owner, repo)
+	}
+
 	sub := domain.NewSubscription(owner, repo)
 
-	exists, err := uc.repo.Exists(ctx, owner, repo)
+	exists, err = uc.repo.Exists(ctx, owner, repo)
 	if err != nil {
 		return fmt.Errorf("failed to check subscription existence: %w", err)
 	}

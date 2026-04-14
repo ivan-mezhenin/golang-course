@@ -10,6 +10,7 @@ import (
 	"repo-stat/platform/logger"
 	subscriberpb "repo-stat/proto/subscriber"
 	"repo-stat/subscriber/config"
+	"repo-stat/subscriber/internal/adapter/github"
 	"repo-stat/subscriber/internal/adapter/repository"
 	grpccontroller "repo-stat/subscriber/internal/controller"
 	"repo-stat/subscriber/internal/usecase"
@@ -41,9 +42,10 @@ func run(ctx context.Context) error {
 
 	log.Info("successfully connected to PostgreSQL")
 
+	ghClient := github.NewAdapter()
 	dbRepo := repository.NewPostgresRepository(dbpool)
 
-	subscriptionUseCase := usecase.NewSubscriptionUseCase(dbRepo)
+	subscriptionUseCase := usecase.NewSubscriptionUseCase(dbRepo, ghClient)
 	pingUseCase := usecase.NewPing()
 
 	handler := grpccontroller.NewHandler(log, subscriptionUseCase, pingUseCase)
