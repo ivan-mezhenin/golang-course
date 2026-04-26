@@ -77,9 +77,9 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: ${SUBSCRIBER_DB_NAME}
-      POSTGRES_USER: ${SUBSCRIBER_DB_USER}
-      POSTGRES_PASSWORD: ${SUBSCRIBER_DB_PASSWORD}
+      POSTGRES_DB: ${SUBSCRIBER_DB_NAME:-repo_stat}
+      POSTGRES_USER: ${SUBSCRIBER_DB_USER:-admin}
+      POSTGRES_PASSWORD: ${SUBSCRIBER_DB_PASSWORD:-password}
     ports:
       - "5432:5432"
     volumes:
@@ -92,9 +92,9 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: ${PROCESSOR_DB_NAME}
-      POSTGRES_USER: ${PROCESSOR_DB_USER}
-      POSTGRES_PASSWORD: ${PROCESSOR_DB_PASSWORD}
+      POSTGRES_DB: ${PROCESSOR_DB_NAME:-processor_db}
+      POSTGRES_USER: ${PROCESSOR_DB_USER:-admin}
+      POSTGRES_PASSWORD: ${PROCESSOR_DB_PASSWORD:-password}
     ports:
       - "5433:5432"
     volumes:
