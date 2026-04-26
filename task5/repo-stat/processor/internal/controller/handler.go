@@ -37,7 +37,9 @@ func (h *Handler) GetRepository(ctx context.Context, req *proto.GetRepoRequest) 
 	}
 
 	return &proto.GetRepoResponse{
-		Name:        repoData.Name,
+		Owner:       repoData.Repo,
+		Repo:        repoData.Repo,
+		FullName:    repoData.FullName,
 		Description: repoData.Description,
 		Stars:       int32(repoData.Stars),
 		Forks:       int32(repoData.Forks),
@@ -64,7 +66,9 @@ func (h *Handler) GetSubscriptionsInfo(ctx context.Context, req *proto.GetSubscr
 	repositories := proto.GetSubscriptionsInfoResponse{Repositories: make([]*proto.GetRepoResponse, 0, len(resp.Repositories))}
 	for _, repo := range resp.Repositories {
 		repositories.Repositories = append(repositories.Repositories, &proto.GetRepoResponse{
-			Name:        repo.Name,
+			Owner:       repo.Owner,
+			Repo:        repo.Repo,
+			FullName:    repo.FullName,
 			Description: repo.Description,
 			Stars:       int32(repo.Stars),
 			Forks:       int32(repo.Forks),

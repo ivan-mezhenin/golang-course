@@ -19,7 +19,9 @@ type Adapter struct {
 }
 
 type githubRepo struct {
-	Name        string `json:"full_name"`
+	Owner       string `json:"owner"`
+	Repo        string `json:"repo"`
+	FullName    string `json:"full_name"`
 	Description string `json:"description"`
 	ForksCount  int32  `json:"forks_count"`
 	Stargazers  int32  `json:"stargazers_count"`
@@ -75,7 +77,9 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 	}
 
 	return &domain.Repository{
-		Name:        gh.Name,
+		Owner:       gh.Owner,
+		Repo:        gh.Repo,
+		FullName:    gh.FullName,
 		Description: gh.Description,
 		Stars:       gh.Stargazers,
 		Forks:       gh.ForksCount,

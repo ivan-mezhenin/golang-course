@@ -54,7 +54,9 @@ func NewRepoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) http.HandlerFunc 
 		}
 
 		response := dto.RepoResponse{
-			Name:        repoInfo.Name,
+			Owner:       repoInfo.Owner,
+			Repo:        repoInfo.Repo,
+			FullName:    repoInfo.FullName,
 			Description: repoInfo.Description,
 			Stars:       repoInfo.Stars,
 			Forks:       repoInfo.Forks,
@@ -101,7 +103,9 @@ func NewGetSubscriptionsInfoHandler(log *slog.Logger, uc *usecase.GetRepoInfo) h
 		repositories := dto.SubscriptionInfoResponse{Repositories: make([]dto.RepoResponse, 0, len(resp.Repositories))}
 		for _, repo := range resp.Repositories {
 			repositories.Repositories = append(repositories.Repositories, dto.RepoResponse{
-				Name:        repo.Name,
+				Owner:       repo.Owner,
+				Repo:        repo.Repo,
+				FullName:    repo.FullName,
 				Description: repo.Description,
 				Stars:       repo.Stars,
 				Forks:       repo.Forks,

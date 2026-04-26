@@ -17,7 +17,8 @@ services:
     depends_on:
       - subscriber
       - processor
-      - postgres
+      - subscriber-db
+      - processor-db
 
   subscriber:
     image: subscriber:latest
@@ -34,7 +35,7 @@ services:
       - LISTEN_ADDRESS=:8080
       - API_ADDRESS=api:8080
     depends_on:
-      - postgres
+      - subscriber-db
 
   processor:
     image: processor:latest
@@ -52,6 +53,7 @@ services:
       - COLLECTOR_ADDRESS=collector:8080
     depends_on:
       - collector
+      - processor-db
 
   collector:
     image: collector:latest
@@ -68,20 +70,35 @@ services:
       - LISTEN_ADDRESS=:8080
       - SUBSCRIBER_ADDRESS=subscriber:8080
     
-  postgres:
+  subscriber-db:
     image: postgres:16-alpine
-    container_name: postgres
+    container_name: subscriber-db
     restart: unless-stopped
     env_file:
-      - .env.default
+      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SUBSCRIBER_DB_NAME}
+      POSTGRES_USER: ${SUBSCRIBER_DB_USER}
+      POSTGRES_PASSWORD: ${SUBSCRIBER_DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - subscriber_data:/var/lib/postgresql/data
+    
+  processor-db:
+    image: postgres:16-alpine
+    container_name: processor-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${PROCESSOR_DB_NAME}
+      POSTGRES_USER: ${PROCESSOR_DB_USER}
+      POSTGRES_PASSWORD: ${PROCESSOR_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - processor_data:/var/lib/postgresql/data
 
   tests:
     image: tests:latest
@@ -94,4 +111,5 @@ services:
     entrypoint: [ "true" ]
   
 volumes:
-  postgres_data:
+  subscriber_data:
+  processor_data:

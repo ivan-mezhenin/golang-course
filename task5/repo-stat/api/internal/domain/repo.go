@@ -1,7 +1,9 @@
 package domain
 
 type Repository struct {
-	Name        string
+	Owner       string
+	Repo        string
+	FullName    string
 	Description string
 	Stars       int32
 	Forks       int32

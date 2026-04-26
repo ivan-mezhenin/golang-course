@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,7 +38,9 @@ func (h *Handler) GetRepoInfo(ctx context.Context, req *proto.GetRepoRequest) (*
 	}
 
 	return &proto.GetRepoResponse{
-		Name:        repoData.Name,
+		Owner:       repoData.Owner,
+		Repo:        repoData.Repo,
+		FullName:    repoData.FullName,
 		Description: repoData.Description,
 		Stars:       int32(repoData.Stars),
 		Forks:       int32(repoData.Forks),
@@ -67,10 +68,11 @@ func (h *Handler) GetSubscriptionsInfo(ctx context.Context, req *proto.GetSubscr
 		Repositories: make([]*proto.GetRepoResponse, 0, len(subscriptions.Repositories)),
 	}
 	for _, sub := range subscriptions.Repositories {
-		fmt.Println(sub.Name, sub.CreatedAt, sub.Visibility)
 		repositories.Repositories = append(repositories.Repositories,
 			&proto.GetRepoResponse{
-				Name:        sub.Name,
+				Owner:       sub.Owner,
+				Repo:        sub.Repo,
+				FullName:    sub.FullName,
 				Description: sub.Description,
 				Stars:       int32(sub.Stars),
 				Forks:       int32(sub.Forks),

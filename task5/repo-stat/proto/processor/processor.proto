@@ -11,12 +11,14 @@ service Processor {
 }
 
 message GetRepoResponse {
-  string name         = 1;
-  string description  = 2;
-  int32  stars        = 3;
-  int32  forks        = 4;
-  string created_at   = 5;
-  string visibility   = 6;
+  string owner = 1;
+  string repo = 2;
+  string full_name         = 3;
+  string description  = 4;
+  int32  stars        = 5;
+  int32  forks        = 6;
+  string created_at   = 7;
+  string visibility   = 8;
 }
 
 message GetRepoRequest {
