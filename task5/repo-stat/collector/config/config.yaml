@@ -11,3 +11,4 @@ logger:
 services:
   subscriber: "localhost:8081"
   processor:  "localhost:8083"
+  kafka: "kafka:9092"
