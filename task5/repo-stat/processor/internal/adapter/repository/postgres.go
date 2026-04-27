@@ -40,10 +40,17 @@ func (r *postgresRepository) ListSubscriptions(ctx context.Context) ([]*domain.S
 }
 
 func (r *postgresRepository) ReplaceAllSubscriptions(ctx context.Context, subs []*domain.Subscription) error {
+	if err := r.queries.DeleteAllSubscriptions(ctx); err != nil {
+		return fmt.Errorf("failed to truncate subscriptions: %w", err)
+	}
+
 	for _, sub := range subs {
-		err := r.queries.ReplaceAllSubscriptions(ctx)
+		err := r.queries.CreateSubscription(ctx, sqlc.CreateSubscriptionParams{
+			Owner: sub.Owner,
+			Repo:  sub.Repo,
+		})
 		if err != nil {
-			return fmt.Errorf("failed to insert subscription %s/%s: %w", sub.Owner, sub.Repo, err)
+			return fmt.Errorf("failed to create subscription %s/%s: %w", sub.Owner, sub.Repo, err)
 		}
 	}
 

@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createSubscription = `-- name: CreateSubscription :exec
+INSERT INTO subscriptions (owner, repo)
+VALUES ($1, $2)
+ON CONFLICT (owner, repo) DO NOTHING
+`
+
+type CreateSubscriptionParams struct {
+	Owner string `db:"owner" json:"owner"`
+	Repo  string `db:"repo" json:"repo"`
+}
+
+func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) error {
+	_, err := q.db.Exec(ctx, createSubscription, arg.Owner, arg.Repo)
+	return err
+}
+
 const deleteAllSubscriptions = `-- name: DeleteAllSubscriptions :exec
 TRUNCATE TABLE subscriptions
 `
@@ -74,15 +90,6 @@ func (q *Queries) ListSubscriptions(ctx context.Context) ([]ListSubscriptionsRow
 		return nil, err
 	}
 	return items, nil
-}
-
-const replaceAllSubscriptions = `-- name: ReplaceAllSubscriptions :exec
-TRUNCATE TABLE subscriptions
-`
-
-func (q *Queries) ReplaceAllSubscriptions(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, replaceAllSubscriptions)
-	return err
 }
 
 const upsertRepoCache = `-- name: UpsertRepoCache :exec

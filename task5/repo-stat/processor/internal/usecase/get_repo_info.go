@@ -2,64 +2,66 @@ package usecase
 
 import (
 	"context"
-	"repo-stat/processor/internal/domain"
+	"fmt"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"repo-stat/processor/internal/adapter/kafka"
+	"repo-stat/processor/internal/domain"
 )
 
-type GetRepoInfo struct {
-	repo RepoGetter
+type GetRepoUseCase struct {
+	repo     Repository
+	producer *kafka.Producer
 }
 
-func NewGetRepoInfo(repo RepoGetter) *GetRepoInfo {
-	return &GetRepoInfo{
-		repo: repo,
+func NewGetRepoUseCase(repo Repository, producer *kafka.Producer) *GetRepoUseCase {
+	return &GetRepoUseCase{
+		repo:     repo,
+		producer: producer,
 	}
 }
 
-func (gri *GetRepoInfo) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
+func (uc *GetRepoUseCase) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
 	if owner == "" || repo == "" {
 		return nil, domain.ErrInvalidInput
 	}
 
-	repositoryInfo, err := gri.repo.Get(ctx, owner, repo)
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			switch st.Code() {
-			case codes.NotFound:
-				return nil, domain.ErrRepoNotFound
-			case codes.InvalidArgument:
-				return nil, domain.ErrInvalidInput
-			case codes.ResourceExhausted:
-				return nil, domain.ErrGitHubRateLimited
-			default:
-				return nil, domain.ErrGitHubAPIError
-			}
-		}
-		return nil, domain.ErrGitHubAPIError
+	cached, err := uc.repo.GetRepoFromCache(ctx, owner, repo)
+	if err == nil && cached != nil {
+		return cached, nil
 	}
 
-	return repositoryInfo, nil
+	if err := uc.producer.PublishRepoRequest(ctx, owner, repo); err != nil {
+		return nil, fmt.Errorf("failed to publish request to kafka: %w", err)
+	}
+
+	return &domain.Repository{
+		Owner: owner,
+		Repo:  repo,
+	}, nil
 }
 
-func (gri *GetRepoInfo) GetSubscriptionsInfo(ctx context.Context) (*domain.SubscriptionInfo, error) {
-	repositories, err := gri.repo.GetSubscriptionsInfo(ctx)
+func (uc *GetRepoUseCase) GetSubscriptionsInfo(ctx context.Context) (*domain.SubscriptionInfo, error) {
+	subs, err := uc.repo.ListSubscriptions(ctx)
 	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			switch st.Code() {
-			case codes.NotFound:
-				return nil, domain.ErrRepoNotFound
-			case codes.InvalidArgument:
-				return nil, domain.ErrInvalidInput
-			case codes.ResourceExhausted:
-				return nil, domain.ErrGitHubRateLimited
-			default:
-				return nil, domain.ErrGitHubAPIError
-			}
-		}
-		return nil, domain.ErrGitHubAPIError
+		return nil, err
 	}
 
-	return repositories, nil
+	var repos []domain.Repository
+
+	for _, sub := range subs {
+		cached, err := uc.repo.GetRepoFromCache(ctx, sub.Owner, sub.Repo)
+		if err == nil && cached != nil {
+			repos = append(repos, *cached)
+			continue
+		}
+
+		_ = uc.producer.PublishRepoRequest(ctx, sub.Owner, sub.Repo)
+
+		repos = append(repos, domain.Repository{
+			Owner: sub.Owner,
+			Repo:  sub.Repo,
+		})
+	}
+
+	return &domain.SubscriptionInfo{Repositories: repos}, nil
 }

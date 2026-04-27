@@ -1,5 +1,4 @@
--- name: ReplaceAllSubscriptions :exec
-TRUNCATE TABLE subscriptions;
+-- name: CreateSubscription :exec
 INSERT INTO subscriptions (owner, repo)
 VALUES ($1, $2)
 ON CONFLICT (owner, repo) DO NOTHING;

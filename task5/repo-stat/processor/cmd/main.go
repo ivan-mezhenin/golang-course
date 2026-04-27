@@ -10,14 +10,16 @@ import (
 	"repo-stat/platform/grpcserver"
 	"repo-stat/platform/logger"
 	"repo-stat/processor/config"
-	"repo-stat/processor/internal/adapter/collector"
+	"repo-stat/processor/internal/adapter/kafka"
+	"repo-stat/processor/internal/adapter/repository"
 	"repo-stat/processor/internal/controller"
 	"repo-stat/processor/internal/usecase"
-	processorServer "repo-stat/proto/processor"
+	processorProto "repo-stat/proto/processor"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func run(ctx context.Context) error {
-
 	var configPath string
 	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
 	flag.Parse()
@@ -26,28 +28,39 @@ func run(ctx context.Context) error {
 
 	log := logger.MustMakeLogger(cfg.Logger.LogLevel)
 
-	log.Info("starting server...")
+	log.Info("starting processor server...")
 	log.Debug("debug messages are enabled")
 
-	collectorAdapter, err := collector.NewClient(cfg.Services.Collector, log)
+	pool, err := pgxpool.New(ctx, cfg.Database.DSN())
 	if err != nil {
-		log.Error("failed to create collector client: ", "error", err)
-		return err
+		return fmt.Errorf("failed to connect to processor db: %w", err)
 	}
+	defer pool.Close()
 
-	repoUsecase := usecase.NewGetRepoInfo(collectorAdapter)
+	// Repository
+	repo := repository.NewPostgresRepository(pool)
 
-	handler := controller.NewHandler(repoUsecase)
+	// Kafka Producer
+	producer := kafka.NewProducer([]string{cfg.Services.Kafka})
 
+	// UseCase
+	getRepoUseCase := usecase.NewGetRepoUseCase(repo, producer)
+
+	// Handler
+	handler := controller.NewHandler(getRepoUseCase)
+
+	// gRPC Server
 	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {
-		return fmt.Errorf("create grpc server: %w", err)
+		return fmt.Errorf("failed to create grpc server: %w", err)
 	}
 
-	processorServer.RegisterProcessorServer(srv.GRPC(), handler)
+	processorProto.RegisterProcessorServer(srv.GRPC(), handler)
+
+	log.Info("processor started", "address", cfg.GRPC.Address)
 
 	if err := srv.Run(ctx); err != nil {
-		return fmt.Errorf("run grpc server: %w", err)
+		return fmt.Errorf("grpc server error: %w", err)
 	}
 
 	return nil
@@ -56,13 +69,10 @@ func run(ctx context.Context) error {
 func main() {
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
 	if err := run(ctx); err != nil {
-		_, err = fmt.Fprintln(os.Stderr, err)
-		if err != nil {
-			fmt.Printf("launching server error: %s\n", err)
-		}
-		cancel()
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
-	cancel()
 }

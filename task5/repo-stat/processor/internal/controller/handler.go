@@ -14,10 +14,10 @@ import (
 type Handler struct {
 	proto.UnimplementedProcessorServer
 
-	usecase *repo.GetRepoInfo
+	usecase *repo.GetRepoUseCase
 }
 
-func NewHandler(usecase *repo.GetRepoInfo) *Handler {
+func NewHandler(usecase *repo.GetRepoUseCase) *Handler {
 	return &Handler{usecase: usecase}
 }
 
