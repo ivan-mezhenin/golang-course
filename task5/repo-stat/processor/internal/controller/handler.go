@@ -37,7 +37,7 @@ func (h *Handler) GetRepository(ctx context.Context, req *proto.GetRepoRequest) 
 	}
 
 	return &proto.GetRepoResponse{
-		Owner:       repoData.Repo,
+		Owner:       repoData.Owner,
 		Repo:        repoData.Repo,
 		FullName:    repoData.FullName,
 		Description: repoData.Description,

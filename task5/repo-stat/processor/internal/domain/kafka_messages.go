@@ -10,8 +10,8 @@ type RepoResponse struct {
 	Repo        string `json:"repo"`
 	FullName    string `json:"full_name"`
 	Description string `json:"description"`
-	Stars       int    `json:"stars"`
-	Forks       int    `json:"forks"`
+	Stars       int32  `json:"stars"`
+	Forks       int32  `json:"forks"`
 	CreatedAt   string `json:"created_at"`
 	Visibility  string `json:"visibility"`
 	Error       string `json:"error,omitempty"`

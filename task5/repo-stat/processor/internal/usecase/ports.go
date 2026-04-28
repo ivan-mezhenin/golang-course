@@ -12,3 +12,7 @@ type Repository interface {
 	GetRepoFromCache(ctx context.Context, owner, repo string) (*domain.Repository, error)
 	UpsertRepoCache(ctx context.Context, repo *domain.Repository) error
 }
+
+type MessageProducer interface {
+	PublishRepoRequest(ctx context.Context, owner, repo string) error
+}

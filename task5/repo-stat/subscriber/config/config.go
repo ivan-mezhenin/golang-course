@@ -16,11 +16,11 @@ type Services struct {
 }
 
 type Database struct {
-	Host     string `yaml:"host"     env:"DB_HOST"     env-default:"postgres"`
+	Host     string `yaml:"host"     env:"DB_HOST"     env-default:"subscriber-db"`
 	Port     int    `yaml:"port"     env:"DB_PORT"     env-default:"5432"`
 	User     string `yaml:"user"     env:"DB_USER"     env-default:"admin"`
 	Password string `yaml:"password" env:"DB_PASSWORD" env-default:"password"`
-	DBName   string `yaml:"dbname"   env:"DB_NAME"     env-default:"repo_stat"`
+	DBName   string `yaml:"dbname"   env:"DB_NAME"     env-default:"subscriber_db"`
 	SSLMode  string `yaml:"sslmode"  env:"DB_SSLMODE" env-default:"disable"`
 }
 

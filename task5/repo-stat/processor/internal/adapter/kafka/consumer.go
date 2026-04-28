@@ -1,0 +1,79 @@
+package kafka
+
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+
+	"repo-stat/processor/internal/domain"
+	"repo-stat/processor/internal/usecase"
+
+	"github.com/segmentio/kafka-go"
+)
+
+type ResponseConsumer struct {
+	reader *kafka.Reader
+	repo   usecase.Repository
+	log    *slog.Logger
+}
+
+func NewResponseConsumer(brokers []string, groupId string, repo usecase.Repository, log *slog.Logger) *ResponseConsumer {
+	return &ResponseConsumer{
+		reader: kafka.NewReader(kafka.ReaderConfig{
+			Brokers: brokers,
+			GroupID: groupId,
+			Topic:   "repo-responses",
+		}),
+		repo: repo,
+		log:  log,
+	}
+}
+
+func (c *ResponseConsumer) Start(ctx context.Context) {
+	c.log.Info("starting response consumer for repo-responses")
+
+	for {
+		msg, err := c.reader.ReadMessage(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			c.log.Error("failed to read response message", "error", err)
+			continue
+		}
+
+		var resp domain.RepoResponse
+		if err := json.Unmarshal(msg.Value, &resp); err != nil {
+			c.log.Error("failed to unmarshal repo response", "error", err)
+			continue
+		}
+
+		if resp.Error != "" {
+			c.log.Warn("received error response from collector",
+				"owner", resp.Owner,
+				"repo", resp.Repo,
+				"error", resp.Error)
+			continue
+		}
+
+		err = c.repo.UpsertRepoCache(ctx, &domain.Repository{
+			Owner:       resp.Owner,
+			Repo:        resp.Repo,
+			FullName:    resp.FullName,
+			Description: resp.Description,
+			Stars:       resp.Stars,
+			Forks:       resp.Forks,
+			Visibility:  resp.Visibility,
+			CreatedAt:   resp.CreatedAt,
+		})
+		if err != nil {
+			c.log.Error("failed to upsert repo cache", "owner", resp.Owner, "repo", resp.Repo, "error", err)
+		} else {
+			c.log.Info("successfully updated cache", "owner", resp.Owner, "repo", resp.Repo)
+		}
+	}
+}
+
+func (c *ResponseConsumer) Close() error {
+	return c.reader.Close()
+}

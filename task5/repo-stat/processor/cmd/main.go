@@ -42,6 +42,12 @@ func run(ctx context.Context) error {
 
 	// Kafka Producer
 	producer := kafka.NewProducer([]string{cfg.Services.Kafka})
+	defer producer.Close()
+
+	consumer := kafka.NewResponseConsumer([]string{cfg.Services.Kafka}, "processor-response-group", repo, log)
+
+	go consumer.Start(ctx)
+	defer consumer.Close()
 
 	// UseCase
 	getRepoUseCase := usecase.NewGetRepoUseCase(repo, producer)

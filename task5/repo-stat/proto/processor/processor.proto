@@ -13,7 +13,7 @@ service Processor {
 message GetRepoResponse {
   string owner = 1;
   string repo = 2;
-  string full_name         = 3;
+  string full_name    = 3;
   string description  = 4;
   int32  stars        = 5;
   int32  forks        = 6;

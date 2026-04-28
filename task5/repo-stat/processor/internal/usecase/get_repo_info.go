@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"repo-stat/processor/internal/adapter/kafka"
 	"repo-stat/processor/internal/domain"
 )
 
 type GetRepoUseCase struct {
 	repo     Repository
-	producer *kafka.Producer
+	producer MessageProducer
 }
 
-func NewGetRepoUseCase(repo Repository, producer *kafka.Producer) *GetRepoUseCase {
+func NewGetRepoUseCase(repo Repository, producer MessageProducer) *GetRepoUseCase {
 	return &GetRepoUseCase{
 		repo:     repo,
 		producer: producer,
