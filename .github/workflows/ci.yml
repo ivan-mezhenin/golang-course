@@ -20,9 +20,9 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: task4/repo-stat/go.mod
+          go-version-file: task5/repo-stat/go.mod
           cache: true
-          cache-dependency-path: task4/repo-stat/go.sum
+          cache-dependency-path: task5/repo-stat/go.sum
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
@@ -48,7 +48,7 @@ jobs:
     needs: lint-and-unit
     defaults:
       run:
-        working-directory: task4
+        working-directory: task5
     steps:
       - uses: actions/checkout@v5
 
