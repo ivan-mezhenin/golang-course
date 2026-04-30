@@ -14,7 +14,7 @@ jobs:
     defaults:
       run:
       # // TODO: other folders
-        working-directory: task4
+        working-directory: task5
     steps:
       - uses: actions/checkout@v5
 
