@@ -18,7 +18,7 @@ type Services struct {
 
 type Database struct {
 	Host     string `yaml:"host"     env:"DB_HOST"     env-default:"processor-db"`
-	Port     int    `yaml:"port"     env:"DB_PORT"     env-default:"5433"`
+	Port     int    `yaml:"port"     env:"DB_PORT"     env-default:"5432"`
 	User     string `yaml:"user"     env:"DB_USER"     env-default:"admin"`
 	Password string `yaml:"password" env:"DB_PASSWORD" env-default:"password"`
 	DBName   string `yaml:"dbname"   env:"DB_NAME"     env-default:"processor_db"`

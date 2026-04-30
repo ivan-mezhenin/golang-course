@@ -28,7 +28,7 @@ func run(ctx context.Context) error {
 	log.Info("starting collector server...")
 
 	// GitHub adapter
-	ghAdapter := github.NewAdapter()
+	ghAdapter := github.NewAdapter(log)
 
 	// Kafka Response Producer
 	responseProducer := kafka.NewResponseProducer([]string{cfg.Services.Kafka})

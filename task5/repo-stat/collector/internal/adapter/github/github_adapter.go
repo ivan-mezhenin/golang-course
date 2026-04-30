@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -16,42 +16,53 @@ const requestTimeout = 10 * time.Second
 
 type Adapter struct {
 	client *http.Client
+	log    *slog.Logger
 }
 
 type githubRepo struct {
-	Owner       string `json:"owner"`
-	Repo        string `json:"repo"`
-	FullName    string `json:"full_name"`
-	Description string `json:"description"`
-	ForksCount  int32  `json:"forks_count"`
-	Stargazers  int32  `json:"stargazers_count"`
-	CreatedAt   string `json:"created_at"`
-	Visibility  string `json:"visibility"`
+	Owner       githubOwner `json:"owner"`
+	Repo        string      `json:"name"`
+	FullName    string      `json:"full_name"`
+	Description string      `json:"description"`
+	ForksCount  int32       `json:"forks_count"`
+	Stargazers  int32       `json:"stargazers_count"`
+	CreatedAt   string      `json:"created_at"`
+	Visibility  string      `json:"visibility"`
 }
 
-func NewAdapter() *Adapter {
+type githubOwner struct {
+	Login string `json:"login"`
+}
+
+func NewAdapter(log *slog.Logger) *Adapter {
 	return &Adapter{
 		client: &http.Client{
 			Timeout: requestTimeout,
 		},
+		log: log,
 	}
 }
 
 func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo)
 
+	a.log.Info("github request", "url", url)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	req.Header.Set("User-Agent", "repo-stat-collector/1.0")
+
 	resp, err := a.client.Do(req)
 	if err != nil {
+		a.log.Error("github request failed", "error", err)
 		return nil, fmt.Errorf("github request failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Println("failed to close response body", "error", err)
+			a.log.Error("failed to close response body", "error", err)
 		}
 	}()
 
@@ -59,6 +70,8 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
+
+	a.log.Info("github response", "status", resp.StatusCode, "body", string(body))
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -77,7 +90,7 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 	}
 
 	return &domain.Repository{
-		Owner:       gh.Owner,
+		Owner:       gh.Owner.Login,
 		Repo:        gh.Repo,
 		FullName:    gh.FullName,
 		Description: gh.Description,

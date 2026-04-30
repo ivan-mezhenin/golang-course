@@ -38,10 +38,10 @@ func run(ctx context.Context) error {
 	defer pool.Close()
 
 	// Repository
-	repo := repository.NewPostgresRepository(pool)
+	repo := repository.NewPostgresRepository(pool, log)
 
 	// Kafka Producer
-	producer := kafka.NewProducer([]string{cfg.Services.Kafka})
+	producer := kafka.NewProducer([]string{cfg.Services.Kafka}, log)
 	defer producer.Close()
 
 	consumer := kafka.NewResponseConsumer([]string{cfg.Services.Kafka}, "processor-response-group", repo, log)
@@ -50,7 +50,7 @@ func run(ctx context.Context) error {
 	defer consumer.Close()
 
 	// UseCase
-	getRepoUseCase := usecase.NewGetRepoUseCase(repo, producer)
+	getRepoUseCase := usecase.NewGetRepoUseCase(repo, producer, log)
 
 	// Handler
 	handler := controller.NewHandler(getRepoUseCase)

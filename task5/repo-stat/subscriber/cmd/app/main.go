@@ -42,7 +42,7 @@ func run(ctx context.Context) error {
 
 	log.Info("successfully connected to PostgreSQL")
 
-	ghClient := github.NewAdapter()
+	ghClient := github.NewAdapter(log)
 	dbRepo := repository.NewPostgresRepository(dbpool)
 
 	subscriptionUseCase := usecase.NewSubscriptionUseCase(dbRepo, ghClient)

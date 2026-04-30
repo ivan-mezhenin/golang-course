@@ -48,6 +48,8 @@ func (c *ResponseConsumer) Start(ctx context.Context) {
 			continue
 		}
 
+		c.log.Info("Received response from Kafka", "owner", resp.Owner, "repo", resp.Repo, "error", resp.Error)
+
 		if resp.Error != "" {
 			c.log.Warn("received error response from collector",
 				"owner", resp.Owner,
@@ -55,6 +57,8 @@ func (c *ResponseConsumer) Start(ctx context.Context) {
 				"error", resp.Error)
 			continue
 		}
+
+		c.log.Info("Upserting to cache", "owner", resp.Owner, "repo", resp.Repo)
 
 		err = c.repo.UpsertRepoCache(ctx, &domain.Repository{
 			Owner:       resp.Owner,

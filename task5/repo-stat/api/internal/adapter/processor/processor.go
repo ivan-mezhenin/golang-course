@@ -37,6 +37,8 @@ func NewClient(address string, log *slog.Logger) (*Client, error) {
 }
 
 func (c *Client) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
+	c.log.Info("calling GetRepository on processor", "owner", owner, "repo", repo)
+
 	resp, err := c.pb.GetRepository(ctx, &processorProto.GetRepoRequest{
 		Owner: owner,
 		Repo:  repo,
@@ -70,6 +72,8 @@ func (c *Client) Get(ctx context.Context, owner, repo string) (*domain.Repositor
 }
 
 func (c *Client) GetSubscriptionsInfo(ctx context.Context) (*domain.SubscriptionInfo, error) {
+	c.log.Info("calling GetSubscriptionsInfo on processor", "address", c.conn.Target())
+
 	resp, err := c.pb.GetSubscriptionsInfo(ctx, &processorProto.GetSubscriptionsInfoRequest{})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {

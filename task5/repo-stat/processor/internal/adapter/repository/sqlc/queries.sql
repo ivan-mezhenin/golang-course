@@ -22,4 +22,4 @@ ON CONFLICT (owner, repo) DO UPDATE SET
     stars             = EXCLUDED.stars,
     forks             = EXCLUDED.forks,
     visibility        = EXCLUDED.visibility,
-    created_at = EXCLUDED.github_created_at;
+    created_at = EXCLUDED.created_at;

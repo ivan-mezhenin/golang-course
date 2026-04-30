@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -22,9 +23,13 @@ type TaskConsumer struct {
 func NewTaskConsumer(brokers []string, groupId string, github *github.Adapter, producer *ResponseProducer, log *slog.Logger) *TaskConsumer {
 	return &TaskConsumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers: brokers,
-			GroupID: groupId,
-			Topic:   "repo-requests",
+			Brokers:        brokers,
+			GroupID:        groupId,
+			Topic:          "repo-requests",
+			MinBytes:       1,
+			MaxBytes:       10e6,
+			StartOffset:    kafka.FirstOffset,
+			CommitInterval: time.Second,
 		}),
 		github:   github,
 		producer: producer,
@@ -33,7 +38,11 @@ func NewTaskConsumer(brokers []string, groupId string, github *github.Adapter, p
 }
 
 func (c *TaskConsumer) Start(ctx context.Context) {
-	c.log.Info("starting task consumer for repo-requests")
+
+	c.log.Info("started consuming from repo-requests",
+		"group_id", c.reader.Config().GroupID,
+		"topic", "repo-requests",
+		"start_offset", "first")
 
 	for {
 		msg, err := c.reader.ReadMessage(ctx)
@@ -46,6 +55,12 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 			continue
 		}
 
+		c.log.Info("received raw kafka message",
+			"key", string(msg.Key),
+			"value", string(msg.Value),
+			"partition", msg.Partition,
+			"offset", msg.Offset)
+
 		var req domain.RepoRequest
 		if err := json.Unmarshal(msg.Value, &req); err != nil {
 			c.log.Error("failed to unmarshal repo request", "error", err)
@@ -56,15 +71,26 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 
 		repoInfo, err := c.github.Get(ctx, req.Owner, req.Repo)
 
+		c.log.Info("after Get", "repoInfo_nil", repoInfo == nil, "err", err)
+
+		c.log.Info("github response", "owner", req.Owner, "repo", req.Repo, "info", repoInfo, "error", err)
+
 		response := domain.RepoResponse{
 			Owner: req.Owner,
 			Repo:  req.Repo,
 		}
 
+		c.log.Info("preparing to publish response",
+			"owner", req.Owner,
+			"repo", req.Repo,
+			"response", fmt.Sprintf("%+v", response),
+			"producer_nil", c.producer == nil)
+
 		if err != nil {
 			response.Error = err.Error()
 			c.log.Error("failed to fetch repo from github", "owner", req.Owner, "repo", req.Repo, "error", err)
 		} else {
+			c.log.Info("filling response", "repoInfo", fmt.Sprintf("%+v", repoInfo))
 			response.FullName = repoInfo.FullName
 			response.Description = repoInfo.Description
 			response.Stars = repoInfo.Stars
@@ -75,6 +101,8 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 
 		if sendErr := c.producer.Publish(ctx, response); sendErr != nil {
 			c.log.Error("failed to publish response to kafka", "error", sendErr)
+		} else {
+			c.log.Info("successfully published response to repo-responses", "owner", req.Owner, "repo", req.Repo)
 		}
 	}
 }

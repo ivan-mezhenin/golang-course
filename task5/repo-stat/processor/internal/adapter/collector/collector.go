@@ -37,6 +37,8 @@ func NewClient(address string, log *slog.Logger) (*Client, error) {
 }
 
 func (c *Client) Get(ctx context.Context, owner, repo string) (*domain.Repository, error) {
+	c.log.Info("calling GetRepoInfo on collector", "owner", owner, "repo", repo)
+
 	req := &proto.GetRepoRequest{
 		Owner: owner,
 		Repo:  repo,
