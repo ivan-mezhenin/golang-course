@@ -42,24 +42,23 @@ func run(ctx context.Context) error {
 
 	// Kafka Producer for gRPC responses
 	producer := kafka.NewProducer([]string{cfg.Services.Kafka}, log)
-	defer producer.Close()
+	defer producer.Close() //nolint:errcheck
 
 	// Consumer for responses from collector
 	consumer := kafka.NewResponseConsumer([]string{cfg.Services.Kafka}, "processor-response-group", repo, log)
 
 	go consumer.Start(ctx)
-	defer consumer.Close()
+	defer consumer.Close() //nolint:errcheck
 
 	// Consumer for subscription updates from collector
 	subConsumer := kafka.NewSubscriptionConsumer([]string{cfg.Services.Kafka}, "processor-subscription-group", repo, log)
 
 	go subConsumer.Start(ctx)
-	defer subConsumer.Close()
-
-	// Producer for sending subscriptions to collector REMOVED to avoid loop
-	// subProducer := kafka.NewSubscriptionProducer([]string{cfg.Services.Kafka}, repo, log)
-	// defer subProducer.Close()
-	// go subProducer.Start(ctx, 15*time.Second)
+	defer func() {
+		if err := subConsumer.Close(); err != nil {
+			log.Error("failed to close subConsumer", "error", err)
+		}
+	}()
 
 	// UseCase
 	getRepoUseCase := usecase.NewGetRepoUseCase(repo, producer, log)
@@ -87,10 +86,11 @@ func run(ctx context.Context) error {
 func main() {
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
-	defer cancel()
 
 	if err := run(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		cancel()
 		os.Exit(1)
 	}
+	cancel()
 }

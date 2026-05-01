@@ -114,10 +114,11 @@ func startSubscriptionUpdater(ctx context.Context, cfg config.Config, ghAdapter 
 func main() {
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
-	defer cancel()
 
 	if err := run(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "collector error: %v\n", err)
+		cancel()
 		os.Exit(1)
 	}
+	cancel()
 }
