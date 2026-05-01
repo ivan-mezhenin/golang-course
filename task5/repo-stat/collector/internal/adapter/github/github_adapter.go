@@ -40,7 +40,7 @@ func NewAdapter(log *slog.Logger, token string) *Adapter {
 		client: &http.Client{
 			Timeout: requestTimeout,
 		},
-		log:  log,
+		log:   log,
 		token: token,
 	}
 }

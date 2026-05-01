@@ -11,14 +11,14 @@ import (
 type GetRepoUseCase struct {
 	repo     Repository
 	producer MessageProducer
-	log     *slog.Logger
+	log      *slog.Logger
 }
 
 func NewGetRepoUseCase(repo Repository, producer MessageProducer, log *slog.Logger) *GetRepoUseCase {
 	return &GetRepoUseCase{
 		repo:     repo,
 		producer: producer,
-		log:     log,
+		log:      log,
 	}
 }
 
