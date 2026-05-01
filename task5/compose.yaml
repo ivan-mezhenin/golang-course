@@ -71,6 +71,7 @@ services:
     environment:
       - LISTEN_ADDRESS=:8080
       - SUBSCRIBER_ADDRESS=subscriber:8080
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
     depends_on:
       - kafka-init
     
@@ -143,6 +144,7 @@ services:
       echo "Creating Kafka topics..."
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic repo-requests --partitions 1 --replication-factor 1 || true
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic repo-responses --partitions 1 --replication-factor 1 || true
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic subscription-updates --partitions 1 --replication-factor 1 || true
       echo "Topics created."
     networks:
       - default

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"time"
 
 	"repo-stat/processor/internal/domain"
 	"repo-stat/processor/internal/usecase"
@@ -20,9 +21,11 @@ type ResponseConsumer struct {
 func NewResponseConsumer(brokers []string, groupId string, repo usecase.Repository, log *slog.Logger) *ResponseConsumer {
 	return &ResponseConsumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers: brokers,
-			GroupID: groupId,
-			Topic:   "repo-responses",
+			Brokers:        brokers,
+			GroupID:        groupId,
+			Topic:          "repo-responses",
+			StartOffset:    kafka.FirstOffset,
+			CommitInterval: 1 * time.Second,
 		}),
 		repo: repo,
 		log:  log,

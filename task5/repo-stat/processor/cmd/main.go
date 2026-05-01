@@ -40,14 +40,26 @@ func run(ctx context.Context) error {
 	// Repository
 	repo := repository.NewPostgresRepository(pool, log)
 
-	// Kafka Producer
+	// Kafka Producer for gRPC responses
 	producer := kafka.NewProducer([]string{cfg.Services.Kafka}, log)
 	defer producer.Close()
 
+	// Consumer for responses from collector
 	consumer := kafka.NewResponseConsumer([]string{cfg.Services.Kafka}, "processor-response-group", repo, log)
 
 	go consumer.Start(ctx)
 	defer consumer.Close()
+
+	// Consumer for subscription updates from collector
+	subConsumer := kafka.NewSubscriptionConsumer([]string{cfg.Services.Kafka}, "processor-subscription-group", repo, log)
+
+	go subConsumer.Start(ctx)
+	defer subConsumer.Close()
+
+	// Producer for sending subscriptions to collector REMOVED to avoid loop
+	// subProducer := kafka.NewSubscriptionProducer([]string{cfg.Services.Kafka}, repo, log)
+	// defer subProducer.Close()
+	// go subProducer.Start(ctx, 15*time.Second)
 
 	// UseCase
 	getRepoUseCase := usecase.NewGetRepoUseCase(repo, producer, log)

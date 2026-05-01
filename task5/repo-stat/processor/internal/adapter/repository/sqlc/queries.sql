@@ -7,7 +7,7 @@ ON CONFLICT (owner, repo) DO NOTHING;
 SELECT owner, repo FROM subscriptions ORDER BY id;
 
 -- name: DeleteAllSubscriptions :exec
-TRUNCATE TABLE subscriptions;
+TRUNCATE TABLE subscriptions RESTART IDENTITY;
 
 -- name: GetRepoFromCache :one
 SELECT * FROM repo_cache 
@@ -22,4 +22,5 @@ ON CONFLICT (owner, repo) DO UPDATE SET
     stars             = EXCLUDED.stars,
     forks             = EXCLUDED.forks,
     visibility        = EXCLUDED.visibility,
-    created_at = EXCLUDED.created_at;
+    created_at        = EXCLUDED.created_at
+WHERE repo_cache.id IS NOT NULL; -- предотвращаем попытку обновления id

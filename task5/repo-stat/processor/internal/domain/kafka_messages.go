@@ -16,3 +16,7 @@ type RepoResponse struct {
 	Visibility  string `json:"visibility"`
 	Error       string `json:"error,omitempty"`
 }
+
+type SubscriptionInfo struct {
+	Repositories []Repository `json:"repositories"`
+}

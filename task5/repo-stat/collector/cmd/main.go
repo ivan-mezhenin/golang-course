@@ -28,10 +28,13 @@ func run(ctx context.Context) error {
 	log.Info("starting collector server...")
 
 	// GitHub adapter
-	ghAdapter := github.NewAdapter(log)
+	ghAdapter := github.NewAdapter(log, cfg.GitHub.Token)
 
 	// Kafka Response Producer
 	responseProducer := kafka.NewResponseProducer([]string{cfg.Services.Kafka})
+
+	// Kafka Subscription Producer
+	subscriptionProducer := kafka.NewSubscriptionProducer([]string{cfg.Services.Kafka})
 
 	// Kafka Task Consumer
 	taskConsumer := kafka.NewTaskConsumer(
@@ -42,14 +45,14 @@ func run(ctx context.Context) error {
 		log,
 	)
 
-	go startSubscriptionUpdater(ctx, cfg, log, responseProducer)
+	go startSubscriptionUpdater(ctx, cfg, ghAdapter, responseProducer, subscriptionProducer, log)
 
 	taskConsumer.Start(ctx)
 
 	return nil
 }
 
-func startSubscriptionUpdater(ctx context.Context, cfg config.Config, log *slog.Logger, producer *kafka.ResponseProducer) {
+func startSubscriptionUpdater(ctx context.Context, cfg config.Config, ghAdapter *github.Adapter, respProducer *kafka.ResponseProducer, subProducer *kafka.SubscriptionProducer, log *slog.Logger) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
@@ -72,9 +75,34 @@ func startSubscriptionUpdater(ctx context.Context, cfg config.Config, log *slog.
 				continue
 			}
 
+			if len(subs) > 0 {
+				if err := subProducer.PublishSubscriptions(ctx, subs); err != nil {
+					log.Error("failed to publish subscriptions update", "error", err)
+				} else {
+					log.Info("published subscriptions to kafka", "count", len(subs))
+				}
+			}
+
 			for _, sub := range subs {
-				if err := producer.Publish(ctx, domain.RepoResponse{Owner: sub.Owner, Repo: sub.Repo}); err != nil {
-					log.Error("failed to publish scheduled request", "owner", sub.Owner, "repo", sub.Repo, "error", err)
+				repoInfo, err := ghAdapter.Get(ctx, sub.Owner, sub.Repo)
+				if err != nil {
+					log.Error("failed to get repo from github", "owner", sub.Owner, "repo", sub.Repo, "error", err)
+					continue
+				}
+
+				response := domain.RepoResponse{
+					Owner:       sub.Owner,
+					Repo:        sub.Repo,
+					FullName:    repoInfo.FullName,
+					Description: repoInfo.Description,
+					Stars:       repoInfo.Stars,
+					Forks:       repoInfo.Forks,
+					Visibility:  repoInfo.Visibility,
+					CreatedAt:   repoInfo.CreatedAt,
+				}
+
+				if err := respProducer.Publish(ctx, response); err != nil {
+					log.Error("failed to publish repo response", "owner", sub.Owner, "repo", sub.Repo, "error", err)
 				}
 			}
 

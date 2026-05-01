@@ -28,7 +28,7 @@ func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscription
 }
 
 const deleteAllSubscriptions = `-- name: DeleteAllSubscriptions :exec
-TRUNCATE TABLE subscriptions
+TRUNCATE TABLE subscriptions RESTART IDENTITY
 `
 
 func (q *Queries) DeleteAllSubscriptions(ctx context.Context) error {
@@ -101,7 +101,8 @@ ON CONFLICT (owner, repo) DO UPDATE SET
     stars             = EXCLUDED.stars,
     forks             = EXCLUDED.forks,
     visibility        = EXCLUDED.visibility,
-    created_at = EXCLUDED.created_at
+    created_at        = EXCLUDED.created_at
+WHERE repo_cache.id IS NOT NULL
 `
 
 type UpsertRepoCacheParams struct {

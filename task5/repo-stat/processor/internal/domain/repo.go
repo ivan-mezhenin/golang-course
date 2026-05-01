@@ -11,10 +11,6 @@ type Repository struct {
 	Visibility  string
 }
 
-type SubscriptionInfo struct {
-	Repositories []Repository
-}
-
 type Subscription struct {
 	Owner string
 	Repo  string

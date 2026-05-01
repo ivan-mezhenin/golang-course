@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -80,17 +79,10 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 			Repo:  req.Repo,
 		}
 
-		c.log.Info("preparing to publish response",
-			"owner", req.Owner,
-			"repo", req.Repo,
-			"response", fmt.Sprintf("%+v", response),
-			"producer_nil", c.producer == nil)
-
 		if err != nil {
 			response.Error = err.Error()
 			c.log.Error("failed to fetch repo from github", "owner", req.Owner, "repo", req.Repo, "error", err)
 		} else {
-			c.log.Info("filling response", "repoInfo", fmt.Sprintf("%+v", repoInfo))
 			response.FullName = repoInfo.FullName
 			response.Description = repoInfo.Description
 			response.Stars = repoInfo.Stars

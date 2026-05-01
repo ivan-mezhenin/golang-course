@@ -12,13 +12,18 @@ type App struct {
 
 type Services struct {
 	Subscriber string `yaml:"subscriber" env:"SUBSCRIBER_ADDRESS" env-default:"localhost:8081"`
-	Processor  string `yaml:"processor" env:"PROCESSOR_ADDRESS" env-default:"localhost:8083"`
+	Processor  string `yaml:"processor"  env:"PROCESSOR_ADDRESS" env-default:"localhost:8082"`
 	Kafka      string `yaml:"kafka"      env:"KAFKA_ADDRESS"     env-default:"kafka:9092"`
+}
+
+type GitHub struct {
+	Token string `yaml:"token" env:"GITHUB_TOKEN" env-default:""`
 }
 
 type Config struct {
 	App      App               `yaml:"app"`
 	Services Services          `yaml:"services"`
+	GitHub   GitHub            `yaml:"github"`
 	GRPC     grpcserver.Config `yaml:"grpc"`
 	Logger   logger.Config     `yaml:"logger"`
 }
