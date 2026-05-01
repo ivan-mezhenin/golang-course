@@ -17,7 +17,6 @@ const requestTimeout = 10 * time.Second
 type Adapter struct {
 	client *http.Client
 	log    *slog.Logger
-	token  string
 }
 
 type githubRepo struct {
@@ -35,13 +34,12 @@ type githubOwner struct {
 	Login string `json:"login"`
 }
 
-func NewAdapter(log *slog.Logger, token string) *Adapter {
+func NewAdapter(log *slog.Logger) *Adapter {
 	return &Adapter{
 		client: &http.Client{
 			Timeout: requestTimeout,
 		},
-		log:   log,
-		token: token,
+		log: log,
 	}
 }
 
@@ -56,9 +54,6 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 	}
 
 	req.Header.Set("User-Agent", "repo-stat-collector/1.0")
-	if a.token != "" {
-		req.Header.Set("Authorization", "Bearer "+a.token)
-	}
 
 	resp, err := a.client.Do(req)
 	if err != nil {

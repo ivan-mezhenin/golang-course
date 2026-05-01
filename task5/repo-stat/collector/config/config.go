@@ -16,14 +16,9 @@ type Services struct {
 	Kafka      string `yaml:"kafka"      env:"KAFKA_ADDRESS"     env-default:"kafka:9092"`
 }
 
-type GitHub struct {
-	Token string `yaml:"token" env:"GITHUB_TOKEN" env-default:""`
-}
-
 type Config struct {
 	App      App               `yaml:"app"`
 	Services Services          `yaml:"services"`
-	GitHub   GitHub            `yaml:"github"`
 	GRPC     grpcserver.Config `yaml:"grpc"`
 	Logger   logger.Config     `yaml:"logger"`
 }
