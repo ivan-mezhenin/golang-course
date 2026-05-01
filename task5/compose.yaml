@@ -71,7 +71,6 @@ services:
     environment:
       - LISTEN_ADDRESS=:8080
       - SUBSCRIBER_ADDRESS=subscriber:8080
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
     depends_on:
       - kafka-init
     
@@ -79,8 +78,6 @@ services:
     image: postgres:16-alpine
     container_name: subscriber-db
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       POSTGRES_DB: ${SUBSCRIBER_DB_NAME:-subscriber_db}
       POSTGRES_USER: ${SUBSCRIBER_DB_USER:-admin}
@@ -95,8 +92,6 @@ services:
     image: postgres:16-alpine
     container_name: processor-db
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       POSTGRES_DB: ${PROCESSOR_DB_NAME:-processor_db}
       POSTGRES_USER: ${PROCESSOR_DB_USER:-admin}
