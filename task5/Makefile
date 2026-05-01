@@ -6,7 +6,6 @@ CONTAINER_RUNTIME ?= docker
 
 up: check-container-runtime down ## Up containers with compose
 	$(CONTAINER_RUNTIME) compose \
-		--env-file .env.default \
 		up --build -d
 
 down: check-container-runtime ## Stop and remove containers
