@@ -20,7 +20,6 @@ run-tests: ## Run tests container
 test: check-container-runtime ## Up containers and run tests
 	@$(MAKE) down-volumes
 	@$(CONTAINER_RUNTIME) compose \
-		--env-file .env.default \
 		up --build -d
 	@echo "Waiting for cluster to start" \
 		&& for i in $$(seq 15); do \
