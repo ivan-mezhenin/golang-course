@@ -75,12 +75,10 @@ func startSubscriptionUpdater(ctx context.Context, cfg config.Config, ghAdapter 
 				continue
 			}
 
-			if len(subs) > 0 {
-				if err := subProducer.PublishSubscriptions(ctx, subs); err != nil {
-					log.Error("failed to publish subscriptions update", "error", err)
-				} else {
-					log.Info("published subscriptions to kafka", "count", len(subs))
-				}
+			if err := subProducer.PublishSubscriptions(ctx, subs); err != nil {
+				log.Error("failed to publish subscriptions update", "error", err)
+			} else {
+				log.Info("published subscriptions to kafka", "count", len(subs))
 			}
 
 			for _, sub := range subs {

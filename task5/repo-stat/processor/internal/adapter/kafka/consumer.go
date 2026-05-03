@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"time"
 
 	"repo-stat/processor/internal/domain"
 	"repo-stat/processor/internal/usecase"
@@ -21,11 +20,10 @@ type ResponseConsumer struct {
 func NewResponseConsumer(brokers []string, groupId string, repo usecase.Repository, log *slog.Logger) *ResponseConsumer {
 	return &ResponseConsumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:        brokers,
-			GroupID:        groupId,
-			Topic:          "repo-responses",
-			StartOffset:    kafka.FirstOffset,
-			CommitInterval: 1 * time.Second,
+			Brokers:     brokers,
+			GroupID:     groupId,
+			Topic:       "repo-responses",
+			StartOffset: kafka.FirstOffset,
 		}),
 		repo: repo,
 		log:  log,
@@ -36,12 +34,12 @@ func (c *ResponseConsumer) Start(ctx context.Context) {
 	c.log.Info("starting response consumer for repo-responses")
 
 	for {
-		msg, err := c.reader.ReadMessage(ctx)
+		msg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
 			}
-			c.log.Error("failed to read response message", "error", err)
+			c.log.Error("failed to fetch response message", "error", err)
 			continue
 		}
 
@@ -58,6 +56,9 @@ func (c *ResponseConsumer) Start(ctx context.Context) {
 				"owner", resp.Owner,
 				"repo", resp.Repo,
 				"error", resp.Error)
+			if err := c.reader.CommitMessages(ctx, msg); err != nil {
+				c.log.Error("failed to commit message on error", "error", err)
+			}
 			continue
 		}
 
@@ -75,8 +76,12 @@ func (c *ResponseConsumer) Start(ctx context.Context) {
 		})
 		if err != nil {
 			c.log.Error("failed to upsert repo cache", "owner", resp.Owner, "repo", resp.Repo, "error", err)
+			continue
 		} else {
 			c.log.Info("successfully updated cache", "owner", resp.Owner, "repo", resp.Repo)
+			if err := c.reader.CommitMessages(ctx, msg); err != nil {
+				c.log.Error("failed to commit message", "error", err)
+			}
 		}
 	}
 }

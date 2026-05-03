@@ -53,12 +53,12 @@ services:
       - COLLECTOR_ADDRESS=collector:8080
       - KAFKA_ADDRESS=kafka:9092
     depends_on:
+      kafka-init:
+        condition: service_completed_successfully
       collector:
         condition: service_started
       processor-db:
         condition: service_started
-      kafka:
-        condition: service_healthy
 
   collector:
     image: collector:latest
@@ -76,9 +76,11 @@ services:
       - SUBSCRIBER_ADDRESS=subscriber:8080
       - KAFKA_ADDRESS=kafka:9092
     depends_on:
-      kafka:
-        condition: service_healthy
-    
+      kafka-init:
+        condition: service_completed_successfully
+      subscriber:
+        condition: service_started
+
   subscriber-db:
     image: postgres:16-alpine
     container_name: subscriber-db
@@ -92,7 +94,7 @@ services:
     volumes:
       - subscriber_data:/var/lib/postgresql/data
       - ./repo-stat/subscriber/migrations:/docker-entrypoint-initdb.d/
-    
+
   processor-db:
     image: postgres:16-alpine
     container_name: processor-db
@@ -106,12 +108,13 @@ services:
     volumes:
       - processor_data:/var/lib/postgresql/data
       - ./repo-stat/processor/migrations:/docker-entrypoint-initdb.d/
-    
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
     environment:
       KAFKA_NODE_ID: 1
+      CLUSTER_ID: 'SxrYbRVTSWOzLOAgdbngbg=='
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
       KAFKA_PROCESS_ROLES: 'broker,controller'
@@ -123,15 +126,26 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      CLUSTER_ID: 'jgL9QmRnTSqtVVudec0lTg=='
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     ports:
-    - "9092:9092"
+      - "9092:9092"
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
       interval: 10s
       timeout: 5s
       retries: 5
-  
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./repo-stat/kafka-init.sh:/kafka-init.sh
+    entrypoint: ["bash", "/kafka-init.sh"]
+    restart: "no"
+
   tests:
     image: tests:latest
     build:
@@ -141,7 +155,7 @@ services:
     depends_on:
       - api
     entrypoint: [ "true" ]
-  
+
 volumes:
   subscriber_data:
   processor_data:

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"time"
 
 	"repo-stat/collector/internal/adapter/github"
 	"repo-stat/collector/internal/domain"
@@ -22,13 +21,12 @@ type TaskConsumer struct {
 func NewTaskConsumer(brokers []string, groupId string, github *github.Adapter, producer *ResponseProducer, log *slog.Logger) *TaskConsumer {
 	return &TaskConsumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:        brokers,
-			GroupID:        groupId,
-			Topic:          "repo-requests",
-			MinBytes:       1,
-			MaxBytes:       10e6,
-			StartOffset:    kafka.FirstOffset,
-			CommitInterval: time.Second,
+			Brokers:     brokers,
+			GroupID:     groupId,
+			Topic:       "repo-requests",
+			MinBytes:    1,
+			MaxBytes:    10e6,
+			StartOffset: kafka.FirstOffset,
 		}),
 		github:   github,
 		producer: producer,
@@ -44,13 +42,12 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 		"start_offset", "first")
 
 	for {
-		msg, err := c.reader.ReadMessage(ctx)
+		msg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
 			}
-			c.log.Error("failed to read message from kafka", "error", err)
-			time.Sleep(1 * time.Second)
+			c.log.Error("failed to fetch message from kafka", "error", err)
 			continue
 		}
 
@@ -63,6 +60,9 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 		var req domain.RepoRequest
 		if err := json.Unmarshal(msg.Value, &req); err != nil {
 			c.log.Error("failed to unmarshal repo request", "error", err)
+			if err := c.reader.CommitMessages(ctx, msg); err != nil {
+				c.log.Error("failed to commit bad message", "error", err)
+			}
 			continue
 		}
 
@@ -93,8 +93,12 @@ func (c *TaskConsumer) Start(ctx context.Context) {
 
 		if sendErr := c.producer.Publish(ctx, response); sendErr != nil {
 			c.log.Error("failed to publish response to kafka", "error", sendErr)
+			continue
 		} else {
 			c.log.Info("successfully published response to repo-responses", "owner", req.Owner, "repo", req.Repo)
+			if err := c.reader.CommitMessages(ctx, msg); err != nil {
+				c.log.Error("failed to commit message", "error", err)
+			}
 		}
 	}
 }
