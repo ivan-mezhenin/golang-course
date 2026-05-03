@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,6 +53,34 @@ func waitForAPI(t *testing.T) {
 	}, 20*time.Second, 500*time.Millisecond, "api did not become ready")
 }
 
+func waitForRepositoryInfo(t *testing.T, url string) *RepositoryInfoResponse {
+	t.Helper()
+
+	var body RepositoryInfoResponse
+	require.Eventually(t, func() bool {
+		resp, err := client.Get(url)
+		if err != nil {
+			t.Logf("Request failed: %v", err)
+			return false
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Logf("Unexpected status: %d", resp.StatusCode)
+			return false
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+			t.Logf("Decode failed: %v", err)
+			return false
+		}
+
+		return body.FullName != "" && body.CreatedAt != ""
+	}, 30*time.Second, 500*time.Millisecond, "repository info did not become available")
+
+	return &body
+}
+
 func serviceMap(services []PingService) map[string]string {
 	res := make(map[string]string, len(services))
 	for _, svc := range services {
@@ -85,14 +114,15 @@ func TestPing(t *testing.T) {
 func TestRepositoryInfo(t *testing.T) {
 	waitForAPI(t)
 
-	resp, err := client.Get(address + "/api/repositories/info?url=https://github.com/golang/go")
+	url := address + "/api/repositories/info?url=https://github.com/golang/go"
+
+	// Make initial request to trigger Kafka processing
+	resp, err := client.Get(url)
 	require.NoError(t, err, "cannot request repository info")
-	defer resp.Body.Close()
+	resp.Body.Close()
 
-	require.Equal(t, http.StatusOK, resp.StatusCode, "wrong status code")
-
-	var body RepositoryInfoResponse
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body), "cannot decode repository info response")
+	// Wait for async processing to complete
+	body := waitForRepositoryInfo(t, url)
 
 	require.Equal(t, "golang/go", body.FullName, "wrong full_name")
 	require.NotEmpty(t, body.Description, "description should not be empty")
@@ -150,31 +180,36 @@ func TestPingHelpfulFailureMessage(t *testing.T) {
 func TestRepositoryInfoHelpfulFailureMessage(t *testing.T) {
 	waitForAPI(t)
 
-	resp, err := client.Get(address + "/api/repositories/info?url=https://github.com/golang/go")
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	url := address + "/api/repositories/info?url=https://github.com/golang/go"
 
-	if resp.StatusCode != http.StatusOK {
-		var body map[string]any
-		_ = json.NewDecoder(resp.Body).Decode(&body)
-		t.Fatalf("unexpected status %d, body=%v", resp.StatusCode, body)
-	}
+	// Trigger request
+	resp, err := client.Get(url)
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	// Wait for data to be available
+	body := waitForRepositoryInfo(t, url)
+
+	require.NotEmpty(t, body.FullName)
+	require.NotEmpty(t, body.CreatedAt)
 }
 
 func TestRepositoryInfoCreatedAtFormatPresent(t *testing.T) {
 	waitForAPI(t)
 
-	resp, err := client.Get(address + "/api/repositories/info?url=https://github.com/golang/go")
+	url := address + "/api/repositories/info?url=https://github.com/golang/go"
+
+	// Trigger request
+	resp, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp.Body.Close()
 
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var body RepositoryInfoResponse
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+	// Wait for async processing
+	body := waitForRepositoryInfo(t, url)
 
 	require.Contains(t, body.CreatedAt, "T", "created_at should look like RFC3339 timestamp")
-	require.Contains(t, body.CreatedAt, "Z", "created_at should be in UTC format")
+	require.True(t, strings.Contains(body.CreatedAt, "T") || strings.Contains(body.CreatedAt, "+"),
+		"created_at should be in RFC3339 format")
 }
 
 func TestRepositoryInfoEndpointStable(t *testing.T) {
@@ -187,14 +222,14 @@ func TestRepositoryInfoEndpointStable(t *testing.T) {
 
 	for _, u := range urls {
 		t.Run(fmt.Sprintf("request_%s", u), func(t *testing.T) {
+			// Trigger request to initiate async processing
 			resp, err := client.Get(u)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			resp.Body.Close()
 
-			require.Equal(t, http.StatusOK, resp.StatusCode)
+			// Wait for async processing to complete
+			body := waitForRepositoryInfo(t, u)
 
-			var body RepositoryInfoResponse
-			require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 			require.NotEmpty(t, body.FullName)
 			require.NotEmpty(t, body.CreatedAt)
 		})

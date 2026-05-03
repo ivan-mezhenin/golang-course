@@ -59,7 +59,7 @@ services:
         condition: service_started
       processor-db:
         condition: service_started
-
+  
   collector:
     image: collector:latest
     build:
@@ -80,7 +80,7 @@ services:
         condition: service_completed_successfully
       subscriber:
         condition: service_started
-
+  
   subscriber-db:
     image: postgres:16-alpine
     container_name: subscriber-db
@@ -94,7 +94,7 @@ services:
     volumes:
       - subscriber_data:/var/lib/postgresql/data
       - ./repo-stat/subscriber/migrations:/docker-entrypoint-initdb.d/
-
+    
   processor-db:
     image: postgres:16-alpine
     container_name: processor-db
@@ -108,7 +108,7 @@ services:
     volumes:
       - processor_data:/var/lib/postgresql/data
       - ./repo-stat/processor/migrations:/docker-entrypoint-initdb.d/
-
+    
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
@@ -134,7 +134,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
+  
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka-init
@@ -155,7 +155,7 @@ services:
     depends_on:
       - api
     entrypoint: [ "true" ]
-
+  
 volumes:
   subscriber_data:
   processor_data:
