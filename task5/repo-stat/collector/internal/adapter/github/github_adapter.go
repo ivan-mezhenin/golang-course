@@ -71,8 +71,6 @@ func (a *Adapter) Get(ctx context.Context, owner, repo string) (*domain.Reposito
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	a.log.Info("github response", "status", resp.StatusCode, "body", string(body))
-
 	switch resp.StatusCode {
 	case http.StatusOK:
 	case http.StatusNotFound:

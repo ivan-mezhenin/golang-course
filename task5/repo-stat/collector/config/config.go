@@ -13,7 +13,7 @@ type App struct {
 type Services struct {
 	Subscriber string `yaml:"subscriber" env:"SUBSCRIBER_ADDRESS" env-default:"localhost:8081"`
 	Processor  string `yaml:"processor"  env:"PROCESSOR_ADDRESS" env-default:"localhost:8082"`
-	Kafka      string `yaml:"kafka"      env:"KAFKA_ADDRESS"     env-default:"kafka:9092"`
+	Kafka      string `yaml:"kafka"      env:"KAFKA_ADDRESS"     env-default:"localhost:9092"`
 }
 
 type Config struct {

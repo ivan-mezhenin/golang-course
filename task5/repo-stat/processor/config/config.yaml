@@ -10,4 +10,4 @@ logger:
 
 services:
   collector: "localhost:8082"
-  kafka: "kafka:9092"
+  kafka: "localhost:9092"

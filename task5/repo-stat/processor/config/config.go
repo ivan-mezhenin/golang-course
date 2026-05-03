@@ -13,7 +13,7 @@ type App struct {
 
 type Services struct {
 	Collector string `yaml:"collector" env:"COLLECTOR_ADDRESS" env-default:"localhost:8082"`
-	Kafka     string `yaml:"kafka"     env:"KAFKA_ADDRESS"     env-default:"kafka:9092"`
+	Kafka     string `yaml:"kafka"     env:"KAFKA_ADDRESS"     env-default:"localhost:9092"`
 }
 
 type Database struct {
