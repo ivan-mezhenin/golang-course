@@ -1,9 +1,3 @@
-// @title           Repo Stat Gateway
-// @version         1.0
-// @description     API Gateway для получения информации о GitHub репозиториях
-
-// @BasePath  /
-// @schemes   http
 package main
 
 import (
@@ -12,39 +6,50 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"repo-stat/api/config"
-	_ "repo-stat/api/docs"
-	"repo-stat/api/internal/controller/http"
-	"repo-stat/platform/httpserver"
+
+	"repo-stat/platform/grpcserver"
 	"repo-stat/platform/logger"
+	"repo-stat/processor/config"
+	"repo-stat/processor/internal/adapter/collector"
+	"repo-stat/processor/internal/controller"
+	"repo-stat/processor/internal/usecase"
+	processorServer "repo-stat/proto/processor"
 )
 
 func run(ctx context.Context) error {
-	// config
+
 	var configPath string
 	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
 	flag.Parse()
 
 	cfg := config.MustLoad(configPath)
 
-	// logger
 	log := logger.MustMakeLogger(cfg.Logger.LogLevel)
 
 	log.Info("starting server...")
 	log.Debug("debug messages are enabled")
 
-	// handler
-	handler, err := http.NewHandler(ctx, log, cfg)
+	collectorAdapter, err := collector.NewClient(cfg.Services.Collector, log)
 	if err != nil {
-		log.Error("Error creating handler", "error", err)
+		log.Error("failed to create collector client: ", "error", err)
 		return err
 	}
 
-	// server
-	srv := httpserver.New(cfg.HTTP, handler)
-	if err := srv.Run(ctx); err != nil {
-		return fmt.Errorf("run http server: %w", err)
+	repoUsecase := usecase.NewGetRepoInfo(collectorAdapter)
+
+	handler := controller.NewHandler(repoUsecase)
+
+	srv, err := grpcserver.New(cfg.GRPC.Address)
+	if err != nil {
+		return fmt.Errorf("create grpc server: %w", err)
 	}
+
+	processorServer.RegisterProcessorServer(srv.GRPC(), handler)
+
+	if err := srv.Run(ctx); err != nil {
+		return fmt.Errorf("run grpc server: %w", err)
+	}
+
 	return nil
 }
 
