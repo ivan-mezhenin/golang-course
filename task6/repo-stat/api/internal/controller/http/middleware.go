@@ -56,7 +56,7 @@ func RateLimitMiddleware(log *slog.Logger, limiter RateLimiter, next http.Handle
 			log.Warn("rate limit exceeded", "ip", ip)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(map[string]string{
+			_ = json.NewEncoder(w).Encode(map[string]string{
 				"error": "rate limit exceeded",
 			})
 			return
@@ -79,7 +79,7 @@ func CacheMiddleware(log *slog.Logger, redisClient *redis.Client, cacheTTL time.
 			log.Info("cache hit", "key", cacheKey)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(cachedData))
+			_, _ = w.Write([]byte(cachedData))
 			return
 		}
 
