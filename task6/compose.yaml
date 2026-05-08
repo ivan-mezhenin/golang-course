@@ -1,4 +1,11 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
   api:
     image: api:latest
     build:
@@ -14,11 +21,14 @@ services:
       - LISTEN_ADDRESS=:8080
       - SUBSCRIBER_ADDRESS=subscriber:8080
       - PROCESSOR_ADDRESS=processor:8080
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - subscriber
       - processor
       - subscriber-db
       - processor-db
+      - redis
 
   subscriber:
     image: subscriber:latest
