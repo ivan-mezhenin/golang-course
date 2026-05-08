@@ -10,8 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/time/rate"
 	"repo-stat/platform/redis"
+
+	"golang.org/x/time/rate"
 )
 
 type RateLimiter interface {
