@@ -69,9 +69,14 @@ func RateLimitMiddleware(log *slog.Logger, limiter RateLimiter, next http.Handle
 	})
 }
 
+var cacheablePaths = map[string]bool{
+	"/api/repositories/info": true,
+	"/subscriptions/info":    true,
+}
+
 func CacheMiddleware(log *slog.Logger, redisClient *redis.Client, cacheTTL time.Duration, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || redisClient == nil {
+		if r.Method != http.MethodGet || redisClient == nil || !cacheablePaths[r.URL.Path] {
 			next.ServeHTTP(w, r)
 			return
 		}
