@@ -15,6 +15,10 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type cacheEntry struct {
+	FullName string `json:"full_name"`
+}
+
 type RateLimiter interface {
 	Allow(ctx context.Context, ip string) bool
 }
@@ -88,12 +92,23 @@ func CacheMiddleware(log *slog.Logger, redisClient *redis.Client, cacheTTL time.
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rw, r)
 
-		if rw.status == http.StatusOK && len(rw.body) > 0 {
+		if rw.status == http.StatusOK && len(rw.body) > 0 && isValidResponse(rw.body) {
 			if err := redisClient.Set(r.Context(), cacheKey, string(rw.body), cacheTTL); err != nil {
 				log.Error("failed to save to cache", "error", err)
 			}
 		}
 	})
+}
+
+func isValidResponse(body []byte) bool {
+	if len(body) < 50 {
+		return false
+	}
+	var entry cacheEntry
+	if err := json.Unmarshal(body, &entry); err != nil {
+		return false
+	}
+	return entry.FullName != ""
 }
 
 type responseWriter struct {
