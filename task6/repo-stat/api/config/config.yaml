@@ -1,0 +1,24 @@
+app:
+  app_name: "repo-stat-api"
+
+http:
+  address: "localhost:8080"
+  timeout: "5s"
+
+logger:
+  log_level: "DEBUG"
+
+services:
+  subscriber: "localhost:8081"
+  processor:  "localhost:8083"
+
+redis:
+  host: "localhost"
+  port: "6379"
+
+cache:
+  ttl_seconds: 60
+
+rate_limit:
+  requests_per_second: 5
+  burst: 10
