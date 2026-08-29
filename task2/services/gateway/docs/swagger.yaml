@@ -1,0 +1,47 @@
+info:
+  contact: {}
+paths:
+  /api/repos/{owner}/{repo}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает базовую информацию о публичном репозитории GitHub
+      parameters:
+      - description: Владелец репозитория (username или организация)
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Название репозитория
+        in: path
+        name: repo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о репозитории
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Некорректные параметры
+          schema:
+            type: string
+        "404":
+          description: Репозиторий не найден
+          schema:
+            type: string
+        "429":
+          description: Превышен лимит запросов к GitHub
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            type: string
+      summary: Получить информацию о репозитории
+      tags:
+      - repos
+swagger: "2.0"
